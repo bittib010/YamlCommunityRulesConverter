@@ -16,7 +16,6 @@ function Load-TemplateFiles {
     return $templates
 }
 
-
 # Function to generate the output based on arguments
 function Generate-Templates {
     param (
@@ -38,14 +37,11 @@ function Generate-Templates {
         $guid = [guid]::NewGuid().ToString()
 
         # Determine the rule type based on the Type column
-        $ruleType = if ($row.Type -eq "Scheduled Rules") {
-            "analytic"
-        } elseif ($row.Type -eq "Hunting Rules") {
-            "hunt"
-        } elseif ($row.Type -eq "NRT Rules") {
-            "nrt"
-        } else {
-            "unknown" 
+        $folder, $ruleType = switch ($row.Type) {
+            "Scheduled Rules" { "Scheduled", "analytic" }
+            "Hunting Rules"   { "Hunting", "hunt" }
+            "NRT Rules"       { "NRT", "nrt" }
+            default           { "Unknown", "unknown" }
         }
 
         # Check if a valid template exists for the combination of outputType and ruleType
@@ -62,7 +58,7 @@ function Generate-Templates {
         $output = $output -replace "{{GUID}}", $guid
         $output = $output -replace "{{Id}}", $row.Id
         $output = $output -replace "{{Name}}", $row.Name
-        $output = $output -replace "{{Description}}", $row.Description
+        $output = $output -replace "{{Description}}", $row.Description -replace "`r`n", "`n" -replace "`n", "`n"
         $output = $output -replace "{{Query}}", $row.Query
         $output = $output -replace "{{Severity}}", $row.Severity
         $output = $output -replace "{{QueryPeriod}}", $row.QueryPeriod
@@ -74,9 +70,25 @@ function Generate-Templates {
         $output = $output -replace "{{RelevantTechniques}}", $row.RelevantTechniques
         $output = $output -replace "{{EntityMappings}}", $row.EntityMappings
 
-        # Output the final template for this row
-        Write-Output $output
-        Write-Output "`n"  # Add a newline for separation
+        # Determine the output file path and extension
+        $outputFileName = "$($row.Name)".Replace(' ', '_').Replace(':', '').Replace('/', '').Replace('\', '')
+        $outputFilePath = ".\temp\$folder\$outputFileName"
+
+        if ($outputType -eq "yaml") {
+            $outputFilePath += ".yaml"
+        } elseif ($outputType -eq "terraform") {
+            $outputFilePath += ".tf"
+        }
+
+        # Ensure the directory exists
+        $outputDirectory = Split-Path -Path $outputFilePath
+        if (-not (Test-Path $outputDirectory)) {
+            New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
+        }
+
+        # Write the final template to a file
+        Set-Content -Path $outputFilePath -Value $output
+        Write-Host "Generated file: $outputFilePath"
     }
 }
 
@@ -87,6 +99,6 @@ $templateFolderPath = ".\Templates"
 
 Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
-
 # TODO: add workspacename as a parameter to change in or consider using it as a var
 # TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead
+# TODO: outtput files to arg dest. Default to temp...
