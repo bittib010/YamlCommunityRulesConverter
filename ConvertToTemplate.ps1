@@ -60,10 +60,19 @@ function Generate-Templates {
         # Replace placeholders with actual values from the row
         $output = $template
         $output = $output -replace "{{GUID}}", $guid
+        $output = $output -replace "{{Id}}", $row.Id
         $output = $output -replace "{{Name}}", $row.Name
         $output = $output -replace "{{Description}}", $row.Description
         $output = $output -replace "{{Query}}", $row.Query
         $output = $output -replace "{{Severity}}", $row.Severity
+        $output = $output -replace "{{QueryPeriod}}", $row.QueryPeriod
+        $output = $output -replace "{{QueryFrequency}}", $row.QueryFrequency
+        $output = $output -replace "{{Tactics}}", $row.Tactics
+        $output = $output -replace "{{TriggerThreshold}}", $row.TriggerThreshold
+        $output = $output -replace "{{TriggerOperator}}", $row.TriggerOperator
+        $output = $output -replace "{{Version}}", $row.Version
+        $output = $output -replace "{{RelevantTechniques}}", $row.RelevantTechniques
+        $output = $output -replace "{{EntityMappings}}", $row.EntityMappings
 
         # Output the final template for this row
         Write-Output $output
@@ -72,7 +81,7 @@ function Generate-Templates {
 }
 
 # Example of running the function with different arguments
-$csvPath = "C:\temp\AzureSentinelRules.csv"
+$csvPath = ".\temp\AzureSentinelRules.csv"
 $outputType = "terraform"  # or "yaml"
 $templateFolderPath = ".\Templates"
 
@@ -80,3 +89,4 @@ Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath
 
 
 # TODO: add workspacename as a parameter to change in or consider using it as a var
+# TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead

@@ -4,19 +4,25 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_{{GUID}}" {
   log_analytics_workspace_id = var.log_analytics_workspace_id
   display_name               = "{{Name}}"
   severity                   = "{{Severity}}"
-  alert_details_override
-  alert_rule_template_guid 
-  alert_rule_template_version
+
+  tactics                    = ["{{Tactics}}"] // Should be comma separated and quoted
+  techniques                 = ["{{RelevantTechniques}}"] // Should be comma separated and quoted
+  alert_details_override     = {{}}
+  alert_rule_template_guid   = {{Id}}
+  alert_rule_template_version = {{Version}}
+
+  trigger_threshold         = {{TriggerThreshold}}
+
   custom_details
-  description
+  description               = {{Description}}
   enabled
-  entity_mapping
+  entity_mapping            = {{EntityMappings}}
   event_grouping
   incident {
 
   }
-  query_frequency
-  query_period
+  query_frequency            = {{QueryFrequency}}
+  query_period               = {{QueryPeriod}}
   query                      = <<QUERY
 {{Query}}
 QUERY

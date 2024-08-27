@@ -58,17 +58,38 @@ Function Process-YamlFile {
         default     { "Hunting Rules" }
     }
 
-        # Generate the correct GitHub link
-        $relativePath = $filePath -replace [regex]::Escape("$TempFolder\"), ""
-        $relativePath = $relativePath -replace '\\', '/'
-        $link = "https://github.com/Azure/Azure-Sentinel/blob/master/$relativePath"
-    
+    # Generate the correct GitHub link
+    $relativePath = $filePath -replace [regex]::Escape("$TempFolder\"), ""
+    $relativePath = $relativePath -replace '\\', '/'
+    $link = "https://github.com/Azure/Azure-Sentinel/blob/master/$relativePath"
 
     # Check if the rule already exists to preserve the "Added" date
     if ($existingRules.ContainsKey($yamlContent.id)) {
         $addedDate = $existingRules[$yamlContent.id].Added
     } else {
         $addedDate = Get-Date
+    }
+
+    # Flatten metadata and tags into columns
+    $metadata = @{}
+    if ($yamlContent.metadata) {
+        foreach ($key in $yamlContent.metadata.Keys) {
+            $subKeys = $yamlContent.metadata[$key].PSObject.Properties.Name
+            foreach ($subKey in $subKeys) {
+                $metadata["Metadata_${key}_${subKey}"] = $yamlContent.metadata[$key].$subKey
+            }
+        }
+    }
+
+    $tags = @{}
+    if ($yamlContent.tags) {
+        $i = 1
+        foreach ($tag in $yamlContent.tags) {
+            foreach ($tagKey in $tag.Keys) {
+                $tags["Tag${i}_${tagKey}"] = $tag.$tagKey
+            }
+            $i++
+        }
     }
 
     return @{
@@ -81,8 +102,14 @@ Function Process-YamlFile {
         Tactics               = $yamlContent.tactics -join ', '
         RelevantTechniques    = $yamlContent.relevantTechniques -join ', '
         Severity              = $yamlContent.severity
+        QueryFrequency        = $yamlContent.queryFrequency
+        QueryPeriod           = $yamlContent.queryPeriod
+        TriggerOperator       = $yamlContent.triggerOperator
+        TriggerThreshold      = $yamlContent.triggerThreshold
         RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
-    }
+        Version               = $yamlContent.version
+        EntityMappings        = ($yamlContent.entityMappings | ForEach-Object { "entityType: $_.entityType, fieldMappings: " + ($_.fieldMappings | ForEach-Object { "$($_.identifier): $($_.columnName)" }) -join ', ' }) -join '; '
+    } + $metadata + $tags
 }
 
 Function Search-AzureSentinelRepo {
@@ -135,18 +162,7 @@ Function Export-RulesToCsv {
     )
 
     $csvData = $rulesList | ForEach-Object {
-        [PSCustomObject]@{
-            Id                    = $_.Id
-            Name                  = $_.Name
-            Description           = $_.Description
-            Type                  = $_.Type
-            Added                 = $_.Added
-            Link                  = $_.Link
-            Tactics               = $_.Tactics
-            RelevantTechniques    = $_.RelevantTechniques
-            Severity              = $_.Severity
-            RequiredDataConnectors = $_.RequiredDataConnectors
-        }
+        [PSCustomObject]$_
     }
 
     $csvData | Export-Csv -Path $csvPath -NoTypeInformation
@@ -166,18 +182,7 @@ Function Import-ExistingRules {
     $existingRules = @{}
 
     foreach ($rule in $csvContent) {
-        $existingRules[$rule.Id] = @{
-            Id                    = $rule.Id
-            Name                  = $rule.Name
-            Description           = $rule.Description
-            Type                  = $rule.Type
-            Added                 = $rule.Added
-            Link                  = $rule.Link
-            Tactics               = $rule.Tactics
-            RelevantTechniques    = $rule.RelevantTechniques
-            Severity              = $rule.Severity
-            RequiredDataConnectors = $rule.RequiredDataConnectors
-        }
+        $existingRules[$rule.Id] = $rule
     }
 
     return $existingRules

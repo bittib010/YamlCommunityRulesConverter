@@ -6,8 +6,18 @@ resource "azurerm_log_analytics_saved_search" "hunt_{{GUID}}" {
 
   category     = "Hunting Queries"
   display_name = "{{Name}}"
+
+    tags = {
+    "tactics"                     = "{{Tactics}}",
+    "techniques"                  = "{{RelevantTechniques}}",
+    "description"                 : "{{Description}}", // Should be limited only to max length here
+    "id"                          = "{{Id}}",
+    "alert_rule_template_version" : "{{Version}}"
+  }
   query        = <<QUERY
-  {{QUERY}}
+  {{Query}}
 
   QUERY
 }
+
+// TODO: alternating between equals and colon inside tags, correct or not?
