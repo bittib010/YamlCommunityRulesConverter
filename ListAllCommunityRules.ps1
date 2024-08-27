@@ -70,7 +70,7 @@ Function Process-YamlFile {
         $addedDate = Get-Date
     }
 
-    # Flatten metadata and tags into columns
+    # Flatten metadata, tags, and other hierarchical fields into columns
     $metadata = @{}
     if ($yamlContent.metadata) {
         foreach ($key in $yamlContent.metadata.Keys) {
@@ -92,6 +92,50 @@ Function Process-YamlFile {
         }
     }
 
+    # Flatten incident configuration
+    $incidentConfig = @{}
+    if ($yamlContent.incidentConfiguration) {
+        $incidentConfig["IncidentConfiguration_CreateIncident"] = $yamlContent.incidentConfiguration.createIncident
+        if ($yamlContent.incidentConfiguration.groupingConfiguration) {
+            $groupConfig = $yamlContent.incidentConfiguration.groupingConfiguration
+            $incidentConfig["IncidentConfiguration_Grouping_Enabled"] = $groupConfig.enabled
+            $incidentConfig["IncidentConfiguration_Grouping_ReopenClosedIncident"] = $groupConfig.reopenClosedIncident
+            $incidentConfig["IncidentConfiguration_Grouping_LookbackDuration"] = $groupConfig.lookbackDuration
+            $incidentConfig["IncidentConfiguration_Grouping_MatchingMethod"] = $groupConfig.matchingMethod
+            $incidentConfig["IncidentConfiguration_Grouping_GroupByEntities"] = $groupConfig.groupByEntities -join ', '
+            $incidentConfig["IncidentConfiguration_Grouping_GroupByAlertDetails"] = $groupConfig.groupByAlertDetails -join ', '
+            $incidentConfig["IncidentConfiguration_Grouping_GroupByCustomDetails"] = $groupConfig.groupByCustomDetails -join ', '
+        }
+    }
+
+    # Flatten event grouping settings
+    $eventGrouping = @{}
+    if ($yamlContent.eventGroupingSettings) {
+        $eventGrouping["EventGroupingSettings_AggregationKind"] = $yamlContent.eventGroupingSettings.aggregationKind
+    }
+
+    # Flatten alert details override
+    $alertDetails = @{}
+    if ($yamlContent.alertDetailsOverride) {
+        $alertDetails["AlertDetailsOverride_AlertDescriptionFormat"] = $yamlContent.alertDetailsOverride.alertDescriptionFormat
+        if ($yamlContent.alertDetailsOverride.alertDynamicProperties) {
+            $i = 1
+            foreach ($property in $yamlContent.alertDetailsOverride.alertDynamicProperties) {
+                $alertDetails["AlertDetailsOverride_Property${i}_AlertProperty"] = $property.alertProperty
+                $alertDetails["AlertDetailsOverride_Property${i}_Value"] = $property.value
+                $i++
+            }
+        }
+    }
+
+    # Flatten custom details
+    $customDetails = @{}
+    if ($yamlContent.customDetails) {
+        foreach ($key in $yamlContent.customDetails.Keys) {
+            $customDetails["CustomDetails_${key}"] = $yamlContent.customDetails[$key]
+        }
+    }
+
     return @{
         Id                    = $yamlContent.id
         Name                  = $yamlContent.name
@@ -106,10 +150,12 @@ Function Process-YamlFile {
         QueryPeriod           = $yamlContent.queryPeriod
         TriggerOperator       = $yamlContent.triggerOperator
         TriggerThreshold      = $yamlContent.triggerThreshold
+        SuppressionEnabled    = $yamlContent.suppressionEnabled
+        SuppressionDuration   = $yamlContent.suppressionDuration
         RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
         Version               = $yamlContent.version
         EntityMappings        = ($yamlContent.entityMappings | ForEach-Object { "entityType: $_.entityType, fieldMappings: " + ($_.fieldMappings | ForEach-Object { "$($_.identifier): $($_.columnName)" }) -join ', ' }) -join '; '
-    } + $metadata + $tags
+    } + $metadata + $tags + $incidentConfig + $eventGrouping + $alertDetails + $customDetails
 }
 
 Function Search-AzureSentinelRepo {
