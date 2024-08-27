@@ -1,103 +1,69 @@
-# Define the template strings for each combination of outputType and ruleType
-$templates = @{
-    "yaml_hunt" = @"
-- type: hunt
-  name: {{Name}}
-  description: {{Description}}
-  query: |
-    {{Query}}
-"@
+# Function to load templates from files
+function Load-TemplateFiles {
+    param (
+        [string]$templateFolderPath
+    )
 
-    "yaml_analytic" = @"
-- type: analytic
-  name: {{Name}}
-  description: {{Description}}
-  query: |
-    {{Query}}
-"@
+    $templateFiles = Get-ChildItem -Path $templateFolderPath -Filter "*.txt"
+    $templates = @{}
 
-    "yaml_nrt" = @"
-- type: nrt
-  name: {{Name}}
-  description: {{Description}}
-  query: |
-    {{Query}}
-"@
+    foreach ($file in $templateFiles) {
+        $templateName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        Write-Host "Loading template: $templateName from file: $($file.FullName)" -ForegroundColor Green
+        $templates[$templateName] = Get-Content -Path $file.FullName -Raw
+    }
 
-    "terraform_hunt" = @"
-resource "hunt_rule" "{{Name}}" {
-  description = "{{Description}}"
-  query       = <<QUERY
-    {{Query}}
-QUERY
-}
-"@
-
-    "terraform_analytic" = @"
-resource "analytic_rule" "{{Name}}" {
-  description = "{{Description}}"
-  query       = <<QUERY
-    {{Query}}
-QUERY
+    return $templates
 }
 
-resource "azurerm_sentinel_alert_rule_scheduled" "ar_{{New-Guid}}" {
-  name                       = "{{<use the same GUID here}}"
-  log_analytics_workspace_id = azurerm_sentinel_log_analytics_workspace_onboarding.example.workspace_id
-  display_name               = "example"
-  severity                   = "High"
-  query                      = <<QUERY
-AzureActivity |
-  where OperationName == "Create or Update Virtual Machine" or OperationName =="Create Deployment" |
-  where ActivityStatus == "Succeeded" |
-  make-series dcount(ResourceId) default=0 on EventSubmissionTimestamp in range(ago(7d), now(), 1d) by Caller
-QUERY
-}
-"@
-
-    "terraform_nrt" = @"
-resource "nrt_rule" "{{Name}}" {
-  description = "{{Description}}"
-  query       = <<QUERY
-    {{Query}}
-QUERY
-}
-"@
-}
 
 # Function to generate the output based on arguments
 function Generate-Templates {
     param (
         [string]$csvPath,
-        [string]$outputType
-        )
+        [string]$outputType,
+        [string]$templateFolderPath
+    )
+
+    # Load templates from the specified folder
+    $templates = Load-TemplateFiles -templateFolderPath $templateFolderPath
 
     # Load CSV file
     $csvData = Import-Csv -Path $csvPath
 
-    $ruleType = if ($row.Type -eq "Scheduled Rules") {
-        "analytic"
-    } elseif ($row.Type -eq "Hunting Rules") {
-        "hunt"
-    } elseif ($row.Type -eq "NRT Rules") {
-        "nrt"
-    } else {
-        "unknown" 
-    }
-    $templateKey = "${outputType}_${ruleType}"
-    $template = $templates[$templateKey]
-
-    if (-not $template) {
-        Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType"
-        return
-    }
-
     # Loop through each row in the CSV and generate output
     foreach ($row in $csvData) {
+
+        # Generate a new GUID for each row
+        $guid = [guid]::NewGuid().ToString()
+
+        # Determine the rule type based on the Type column
+        $ruleType = if ($row.Type -eq "Scheduled Rules") {
+            "analytic"
+        } elseif ($row.Type -eq "Hunting Rules") {
+            "hunt"
+        } elseif ($row.Type -eq "NRT Rules") {
+            "nrt"
+        } else {
+            "unknown" 
+        }
+
+        # Check if a valid template exists for the combination of outputType and ruleType
+        $templateKey = "${outputType}_${ruleType}"
+        $template = $templates[$templateKey]
+
+        if (-not $template) {
+            Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType ($($row.Type))"
+            continue  # Skip to the next row if the combination is invalid
+        }
+
+        # Replace placeholders with actual values from the row
         $output = $template
+        $output = $output -replace "{{GUID}}", $guid
         $output = $output -replace "{{Name}}", $row.Name
         $output = $output -replace "{{Description}}", $row.Description
         $output = $output -replace "{{Query}}", $row.Query
+        $output = $output -replace "{{Severity}}", $row.Severity
 
         # Output the final template for this row
         Write-Output $output
@@ -106,7 +72,11 @@ function Generate-Templates {
 }
 
 # Example of running the function with different arguments
-$csvPath = "path\to\your\file.csv"
-$outputType = "yaml"  # or "terraform"
+$csvPath = "C:\temp\AzureSentinelRules.csv"
+$outputType = "terraform"  # or "yaml"
+$templateFolderPath = ".\Templates"
 
-Generate-Templates -csvPath $csvPath -outputType $outputType
+Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
+
+
+# TODO: add workspacename as a parameter to change in or consider using it as a var

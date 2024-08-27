@@ -2,8 +2,8 @@
 Import-Module powershell-yaml
 
 # Set the path to the cloned Azure-Sentinel directory
-$TempFolder = "C:\temp\Azure-Sentinel"
-$OutputCsv = "C:\temp\AzureSentinelRules.csv"
+$TempFolder = ".\temp\Azure-Sentinel"
+$OutputCsv = ".\temp\AzureSentinelRules.csv"
 
 Function Install-NodeJsAndPrettier {
     # Check if Node.js is installed
@@ -209,3 +209,4 @@ Export-RulesToCsv -rulesList $newRulesList -csvPath $OutputCsv
 
 
 # TODO: add a check to see if the outputfile has been created already. If it has been created, we need to ensure a way to compare versions of the rules. If the version is unchanged, proceed to the next rule.
+# TODO: Filter out the: "C:\temp\Azure-Sentinel\.script\tests\yamlFileValidatorTest\invalidFile.yaml"

@@ -1,0 +1,23 @@
+resource "azurerm_sentinel_alert_rule_scheduled" "ar_{{GUID}}" {
+  // https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/sentinel_alert_rule_scheduled
+  name                       = "{{GUID}}"
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+  display_name               = "{{Name}}"
+  severity                   = "{{Severity}}"
+  alert_details_override
+  alert_rule_template_guid 
+  alert_rule_template_version
+  custom_details
+  description
+  enabled
+  entity_mapping
+  event_grouping
+  incident {
+
+  }
+  query_frequency
+  query_period
+  query                      = <<QUERY
+{{Query}}
+QUERY
+}

@@ -1,0 +1,13 @@
+
+resource "azurerm_log_analytics_saved_search" "hunt_{{GUID}}" {
+  // https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_saved_search
+  name                       = "{{GUID}}"
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  category     = "Hunting Queries"
+  display_name = "{{Name}}"
+  query        = <<QUERY
+  {{QUERY}}
+
+  QUERY
+}
