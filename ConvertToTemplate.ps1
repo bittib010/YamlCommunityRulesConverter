@@ -4,13 +4,13 @@ function Load-TemplateFiles {
         [string]$templateFolderPath
     )
 
-    $templateFiles = Get-ChildItem -Path $templateFolderPath -Filter "*.txt"
+    $templateFiles = Get-ChildItem -Path $templateFolderPath -Filter "*.ps1"
     $templates = @{}
 
     foreach ($file in $templateFiles) {
         $templateName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
         Write-Host "Loading template: $templateName from file: $($file.FullName)" -ForegroundColor Green
-        $templates[$templateName] = Get-Content -Path $file.FullName -Raw
+        $templates[$templateName] = $file.FullName
     }
 
     return $templates
@@ -46,29 +46,33 @@ function Generate-Templates {
 
         # Check if a valid template exists for the combination of outputType and ruleType
         $templateKey = "${outputType}_${ruleType}"
-        $template = $templates[$templateKey]
+        $templatePath = $templates[$templateKey]
 
-        if (-not $template) {
+        if (-not $templatePath) {
             Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType ($($row.Type))"
             continue  # Skip to the next row if the combination is invalid
         }
 
-        # Replace placeholders with actual values from the row
-        $output = $template
-        $output = $output -replace "{{GUID}}", $guid
-        $output = $output -replace "{{Id}}", $row.Id
-        $output = $output -replace "{{Name}}", $row.Name
-        $output = $output -replace "{{Description}}", $row.Description -replace "`r`n", "`n" -replace "`n", "`n"
-        $output = $output -replace "{{Query}}", $row.Query
-        $output = $output -replace "{{Severity}}", $row.Severity
-        $output = $output -replace "{{QueryPeriod}}", $row.QueryPeriod
-        $output = $output -replace "{{QueryFrequency}}", $row.QueryFrequency
-        $output = $output -replace "{{Tactics}}", $row.Tactics
-        $output = $output -replace "{{TriggerThreshold}}", $row.TriggerThreshold
-        $output = $output -replace "{{TriggerOperator}}", $row.TriggerOperator
-        $output = $output -replace "{{Version}}", $row.Version
-        $output = $output -replace "{{RelevantTechniques}}", $row.RelevantTechniques
-        $output = $output -replace "{{EntityMappings}}", $row.EntityMappings
+        # Prepare unique guid for each rule
+        $guid = [guid]::NewGuid()
+
+        # Define variables that will be used in the template
+        $Id = $row.Id
+        $Name = $row.Name
+        $Description = $row.Description
+        $Query = $row.Query
+        $Severity = $row.Severity
+        $QueryPeriod = $row.QueryPeriod
+        $QueryFrequency = $row.QueryFrequency
+        $Tactics = $row.Tactics
+        $TriggerThreshold = $row.TriggerThreshold
+        $TriggerOperator = $row.TriggerOperator
+        $Version = $row.Version
+        $RelevantTechniques = $row.RelevantTechniques
+        $EntityMappings = $row.EntityMappings
+
+        # Execute the template script
+        $output = & $templatePath
 
         # Determine the output file path and extension
         $outputFileName = "$($row.Name)".Replace(' ', '_').Replace(':', '').Replace('/', '').Replace('\', '')

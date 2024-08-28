@@ -1,7 +1,8 @@
-
-resource "azurerm_log_analytics_saved_search" "hunt_{{GUID}}" {
+# Main Template starts here:
+@"
+resource "azurerm_log_analytics_saved_search" "hunt_$guid" {
   // https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/log_analytics_saved_search
-  name                       = "{{GUID}}"
+  name                       = "$guid"
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
   category     = "Hunting Queries"
@@ -19,5 +20,6 @@ resource "azurerm_log_analytics_saved_search" "hunt_{{GUID}}" {
 
   QUERY
 }
+"@
 
-// TODO: alternating between equals and colon inside tags, correct or not?
+# TODO: alternating between equals and colon inside tags, correct or not?

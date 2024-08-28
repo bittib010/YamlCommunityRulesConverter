@@ -1,46 +1,84 @@
-$guid = New-Guid
-$name = "{{Name}}"
-$severity = "{{Severity}}"
+# Prepare tactics
 $tacticsArray = $row.Tactics -split ', '
-$tactics = ($tacticsArray | ForEach-Object { "'$_'" }) -join ', '
+$tactics = ($tacticsArray | ForEach-Object { "`"$_`"" }) -join ', '
+
+# Prepare Techniques
 $techniquesArray = $row.RelevantTechniques -split ', '
-$techniques = ($techniquesArray | ForEach-Object { "'$($_ -split '\.')[0]'" }) -join ', '
+$techniques = ($techniquesArray | ForEach-Object { "`"$($_ -split '\.')`"" }) -join ', '
+
+# Prepare Entity Mappings
 $entityMappingsArray = $row.EntityMappings -split '; '
-$entityMappings = if ($entityMappingsArray) {
-    ($entityMappingsArray | ForEach-Object {
-        $parts = $_ -split ': '
-        "entityType: $($parts[0]), fieldMappings: $($parts[1])"
-    }) -join '; '
+
+$entityMappings = ""
+if ($entityMappingsArray -and $entityMappingsArray.Length -gt 0) {
+    foreach ($mapping in $entityMappingsArray) {
+        $parts = $mapping -split ': '
+
+        # Start entity_mapping block
+        $entityMappings += "`tentity_mapping {`n"
+        $entityMappings += "`t`tentity_type = `"$($parts[0])`"`n"
+
+        # Check if fieldMappings exist
+        if ($parts[1]) {
+            $fieldMappingsArray = $parts[1] -split ', '
+            foreach ($fieldMapping in $fieldMappingsArray) {
+                $fieldParts = $fieldMapping -split '='
+                $columnName = $fieldParts[0].Trim()
+                $identifier = $fieldParts[1].Trim()
+
+                $entityMappings += "`t`tfield_mapping {`n"
+                $entityMappings += "`t`t`t`tcolumn_name = `"$columnName`"`n"
+                $entityMappings += "`t`t`t`tidentifier  = `"$identifier`"`n"
+                $entityMappings += "`t`t}`n"
+            }
+        }
+
+        # End entity_mapping block
+        $entityMappings += "`t}`n"
+    }
 } else {
-    "{}"
+    $entityMappings = "{}"
 }
 
-$id = $row.Id
+
+# Prepare Description to not be printed on multiple lines.
 $description = $row.Description
-$Query = $row.Query
+$description = $description -replace "`n|`r|'", ""
+$description = $description -replace "\\", "\\"
+$description = $description -replace "`"", "\`"" 
+
+$query = $row.Query
 $queryPeriod = $row.QueryPeriod
 $queryFrequency = $row.QueryFrequency
 $TriggerThreshold = $row.TriggerThreshold
 $TriggerOperator = $row.TriggerOperator
-$version = $row.Version
 
+# Prepare custom details if available
+$customDetailsSection = ""
+if ($row.CustomDetails) {
+    $customDetailsArray = $row.CustomDetails -split ', '
+    $customDetails = ($customDetailsArray | ForEach-Object { "'$_'" }) -join ', '
+    $customDetailsSection = "  custom_details             = {$customDetails}`n"
+}
+
+# Main Template starts here:
 @"
 resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   // https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/sentinel_alert_rule_scheduled
   name                       = "$guid"
   log_analytics_workspace_id = var.log_analytics_workspace_id
-  display_name               = "$name"
-  severity                   = "$severity"
+  display_name               = "$($row.Name)"
+  severity                   = "$($row.Severity)"
 
-  tactics                    = [$tactics] // Comma separated and quoted
-  techniques                 = [$techniques] // Comma separated and quoted, no subtechniques
+  tactics                    = [$tactics] 
+  techniques                 = [$techniques]
   alert_details_override     = {}
-  alert_rule_template_guid   = "$id"
-  alert_rule_template_version = "$version"
+  alert_rule_template_guid   = "$($row.Id)"
+  alert_rule_template_version = "$($row.Version)"
 
-  trigger_threshold          = {{TriggerThreshold}}
+  trigger_threshold          = $TriggerThreshold
 
-  custom_details             = {}
+$customDetailsSection  # This line is conditionally included if custom details exist
   description                = "$description" 
   enabled                    = true  // Will later be used to set based on a column controlled by the user.
   entity_mapping             = $entityMappings
@@ -59,7 +97,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   query_frequency            = "$queryFrequency"
   query_period               = "$queryPeriod"
   query                      = <<QUERY
-{{Query}}
+$query
 QUERY
 }
 "@
