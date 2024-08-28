@@ -86,10 +86,23 @@ function Convert-ToISO8601Duration {
 }
 
 # Convert QueryPeriod and QueryFrequency to ISO 8601
-$queryPeriod = Convert-ToISO8601Duration -timeValue $row.QueryPeriod
-$queryFrequency = Convert-ToISO8601Duration -timeValue $row.QueryFrequency
+$queryPeriod = ""
+if ($row.QueryPeriod){
+    $queryPeriod = Convert-ToISO8601Duration -timeValue $row.QueryPeriod
+    $queryPeriod = "query_frequency            = `"$($row.QueryPeriod)`""
+}
 
-$TriggerThreshold = $row.TriggerThreshold 
+$queryFrequency = ""
+if ($row.QueryFrequency){
+    $queryFrequency = Convert-ToISO8601Duration -timeValue $row.QueryFrequency
+    $queryFrequency = "query_period               = `"$($row.QueryFrequency)`""
+}
+
+# Prepare Trigger Threshold
+$TriggerThreshold = ""
+if($row.TriggerThreshold){
+    $TriggerThreshold = "trigger_threshold          = $($row.TriggerThreshold)"
+}
 $TriggerOperator = $row.TriggerOperator
 
 # Prepare custom details if available
@@ -184,7 +197,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   alert_rule_template_guid   = "$($row.Id)"
   alert_rule_template_version = "$($row.Version)"
 
-  trigger_threshold          = $TriggerThreshold
+  $TriggerThreshold
 
   $customDetailsSection  
   description                = "$description" 
@@ -202,8 +215,8 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
       by_entities            = ["Account"]
     }
   }
-  query_frequency            = "$queryFrequency"
-  query_period               = "$queryPeriod"
+  $queryFrequency
+  $queryPeriod
   query                      = <<EOQUERY
 $query
 EOQUERY

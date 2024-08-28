@@ -108,3 +108,7 @@ terraform fmt -recursive -list=false ./
 # TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead
 # TODO: outtput files to arg dest. Default to temp...
 # TODO: Remove newlines from sections that are not printed to file because not existing.
+# TODO: Azure repo fixes to do:
+#           - Fix formatting on yaml files with MDE, MDO and more starting filenames
+#           - Fix missing severity on scheduled rules
+#           - Fix naming conventions using square brackets
