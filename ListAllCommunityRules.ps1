@@ -86,15 +86,6 @@ Function Process-YamlFile {
         }
     }
 
-    # Flatten metadata and put the values in the corresponding row
-    $metadata = @{}
-    if ($yamlContent.metadata) {
-        foreach ($key in $yamlContent.metadata.Keys) {
-            $metadataValue = $yamlContent.metadata[$key].PSObject.Properties | ForEach-Object { "$($_.Name): $($_.Value)" }
-            $metadata["Metadata_${key}"] = $metadataValue -join ', '
-        }
-    }
-
     $tags = @{}
     if ($yamlContent.tags) {
         $i = 1
@@ -152,28 +143,36 @@ Function Process-YamlFile {
         $customDetails = $customDetailsPairs -join ', '
     }
 
-    return @{
-        Id                    = $yamlContent.id
-        Name                  = $yamlContent.name
-        Description           = $yamlContent.description
-        Type                  = $type
-        Added                 = $addedDate
-        Link                  = $link
-        Tactics               = $yamlContent.tactics -join ', '
-        RelevantTechniques    = $yamlContent.relevantTechniques -join ', '
-        Severity              = $yamlContent.severity
-        QueryFrequency        = $yamlContent.queryFrequency
-        QueryPeriod           = $yamlContent.queryPeriod
-        Query                 = $yamlContent.query
-        TriggerOperator       = $yamlContent.triggerOperator
-        TriggerThreshold      = $yamlContent.triggerThreshold
-        SuppressionEnabled    = $yamlContent.suppressionEnabled
-        SuppressionDuration   = $yamlContent.suppressionDuration
-        RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
-        Version               = $yamlContent.version
-        EntityMappings        = $entityMappings.TrimEnd("; ")
-        CustomDetails         = $customDetails
-    } + $metadata + $tags + $incidentConfig + $eventGrouping + $alertDetails
+# Convert metadata to JSON string for easier storage in CSV
+$metadataJson = ""
+if ($yamlContent.metadata) {
+    $metadataJson = $yamlContent.metadata | ConvertTo-Json -Compress
+}
+
+return @{
+    Id                    = $yamlContent.id
+    Name                  = $yamlContent.name
+    Description           = $yamlContent.description
+    Type                  = $type
+    Added                 = $addedDate
+    Link                  = $link
+    Tactics               = $yamlContent.tactics -join ', '
+    RelevantTechniques    = $yamlContent.relevantTechniques -join ', '
+    Severity              = $yamlContent.severity
+    QueryFrequency        = $yamlContent.queryFrequency
+    QueryPeriod           = $yamlContent.queryPeriod
+    Query                 = $yamlContent.query
+    TriggerOperator       = $yamlContent.triggerOperator
+    TriggerThreshold      = $yamlContent.triggerThreshold
+    SuppressionEnabled    = $yamlContent.suppressionEnabled
+    SuppressionDuration   = $yamlContent.suppressionDuration
+    RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
+    Version               = $yamlContent.version
+    EntityMappings        = $entityMappings.TrimEnd("; ")
+    CustomDetails         = $customDetails
+    Metadata              = $metadataJson
+} + $tags + $incidentConfig + $eventGrouping + $alertDetails
+
 }
 
 Function Search-AzureSentinelRepo {
