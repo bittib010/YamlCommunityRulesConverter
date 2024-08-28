@@ -103,6 +103,10 @@ $templateFolderPath = ".\Templates"
 
 Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
+# Format according to official style and do not display format changes
+Write-Output ("Formatting all rules........")
+terraform fmt -recursive -list=false ./ 
+
 # TODO: add workspacename as a parameter to change in or consider using it as a var
 # TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead
 # TODO: outtput files to arg dest. Default to temp...

@@ -12,24 +12,34 @@ $entityMappingsArray = $row.EntityMappings -split '; '
 $entityMappings = ""
 if ($entityMappingsArray -and $entityMappingsArray.Length -gt 0) {
     foreach ($mapping in $entityMappingsArray) {
-        $parts = $mapping -split ': '
+        $mappingParts = $mapping -split ', fieldMappings: '
+
+        # Extract the entity type
+        $entityType = $mappingParts[0] -replace 'entityType: ', ''
 
         # Start entity_mapping block
-        $entityMappings += "`tentity_mapping {`n"
-        $entityMappings += "`t`tentity_type = `"$($parts[0])`"`n"
+        $entityMappings += "entity_mapping {`n"
+        $entityMappings += "entity_type = `"$entityType`"`n"
 
-        # Check if fieldMappings exist
-        if ($parts[1]) {
-            $fieldMappingsArray = $parts[1] -split ', '
+        # Process field mappings if they exist
+        if ($mappingParts.Length -gt 1) {
+            $fieldMappings = $mappingParts[1]
+            $fieldMappingsArray = $fieldMappings -split ',\s*'  # Split on comma followed by any whitespace
+            
             foreach ($fieldMapping in $fieldMappingsArray) {
-                $fieldParts = $fieldMapping -split '='
-                $columnName = $fieldParts[0].Trim()
-                $identifier = $fieldParts[1].Trim()
+                $fieldParts = $fieldMapping -split ':'
 
-                $entityMappings += "`t`tfield_mapping {`n"
-                $entityMappings += "`t`t`t`tcolumn_name = `"$columnName`"`n"
-                $entityMappings += "`t`t`t`tidentifier  = `"$identifier`"`n"
-                $entityMappings += "`t`t}`n"
+                if ($fieldParts.Length -eq 2) {
+                    $identifier = $fieldParts[0].Trim()
+                    $columnName = $fieldParts[1].Trim()
+
+                    $entityMappings += "field_mapping {`n"
+                    $entityMappings += "identifier  = `"$identifier`"`n"
+                    $entityMappings += "column_name = `"$columnName`"`n"
+                    $entityMappings += "}`n"
+                } else {
+                    Write-Host "Warning: Malformed field mapping encountered: $fieldMapping"
+                }
             }
         }
 
@@ -39,7 +49,6 @@ if ($entityMappingsArray -and $entityMappingsArray.Length -gt 0) {
 } else {
     $entityMappings = "{}"
 }
-
 
 # Prepare Description to not be printed on multiple lines.
 $description = $row.Description
@@ -78,10 +87,10 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
 
   trigger_threshold          = $TriggerThreshold
 
-$customDetailsSection  # This line is conditionally included if custom details exist
+  $customDetailsSection  
   description                = "$description" 
   enabled                    = true  // Will later be used to set based on a column controlled by the user.
-  entity_mapping             = $entityMappings
+  $entityMappings
   event_grouping {
     aggregation_method       = "AlertPerResult"
   }

@@ -70,14 +70,28 @@ Function Process-YamlFile {
         $addedDate = Get-Date
     }
 
-    # Flatten metadata, tags, and other hierarchical fields into columns
+    # Handle Entity Mappings
+    $entityMappings = ""
+    if ($yamlContent.entityMappings) {
+        foreach ($mapping in $yamlContent.entityMappings) {
+            $entityType = $mapping.entityType
+            $entityMappings += "entityType: $entityType, fieldMappings: "
+
+            $fieldMappings = @()
+            foreach ($fieldMapping in $mapping.fieldMappings) {
+                $fieldMappings += "$($fieldMapping.identifier): $($fieldMapping.columnName)"
+            }
+
+            $entityMappings += ($fieldMappings -join ', ') + "; "
+        }
+    }
+
+    # Flatten metadata and put the values in the corresponding row
     $metadata = @{}
     if ($yamlContent.metadata) {
         foreach ($key in $yamlContent.metadata.Keys) {
-            $subKeys = $yamlContent.metadata[$key].PSObject.Properties.Name
-            foreach ($subKey in $subKeys) {
-                $metadata["Metadata_${key}_${subKey}"] = $yamlContent.metadata[$key].$subKey
-            }
+            $metadataValue = $yamlContent.metadata[$key].PSObject.Properties | ForEach-Object { "$($_.Name): $($_.Value)" }
+            $metadata["Metadata_${key}"] = $metadataValue -join ', '
         }
     }
 
@@ -154,7 +168,7 @@ Function Process-YamlFile {
         SuppressionDuration   = $yamlContent.suppressionDuration
         RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
         Version               = $yamlContent.version
-        EntityMappings        = ($yamlContent.entityMappings | ForEach-Object { "entityType: $_.entityType, fieldMappings: " + ($_.fieldMappings | ForEach-Object { "$($_.identifier): $($_.columnName)" }) -join ', ' }) -join '; '
+        EntityMappings        = $entityMappings.TrimEnd("; ")
     } + $metadata + $tags + $incidentConfig + $eventGrouping + $alertDetails + $customDetails
 }
 
@@ -247,7 +261,7 @@ if (Test-Path $TempFolder) {
 }
 
 # Format the repository with Prettier
-Format-RepoWithPrettier -repoDirectory $TempFolder
+#Format-RepoWithPrettier -repoDirectory $TempFolder
 
 # Import existing rules from the CSV if it exists
 $existingRules = Import-ExistingRules -csvPath $OutputCsv
