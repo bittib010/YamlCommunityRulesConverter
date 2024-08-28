@@ -142,12 +142,14 @@ Function Process-YamlFile {
         }
     }
 
-    # Flatten custom details
-    $customDetails = @{}
+    # Flatten custom details into comma-separated key-value pairs
+    $customDetails = ""
     if ($yamlContent.customDetails) {
+        $customDetailsPairs = @()
         foreach ($key in $yamlContent.customDetails.Keys) {
-            $customDetails["CustomDetails_${key}"] = $yamlContent.customDetails[$key]
+            $customDetailsPairs += "$($key): $($yamlContent.customDetails[$key])"
         }
+        $customDetails = $customDetailsPairs -join ', '
     }
 
     return @{
@@ -169,7 +171,8 @@ Function Process-YamlFile {
         RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
         Version               = $yamlContent.version
         EntityMappings        = $entityMappings.TrimEnd("; ")
-    } + $metadata + $tags + $incidentConfig + $eventGrouping + $alertDetails + $customDetails
+        CustomDetails         = $customDetails
+    } + $metadata + $tags + $incidentConfig + $eventGrouping + $alertDetails
 }
 
 Function Search-AzureSentinelRepo {

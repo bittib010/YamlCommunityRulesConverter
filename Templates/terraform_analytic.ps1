@@ -66,9 +66,18 @@ $TriggerOperator = $row.TriggerOperator
 $customDetailsSection = ""
 if ($row.CustomDetails) {
     $customDetailsArray = $row.CustomDetails -split ', '
-    $customDetails = ($customDetailsArray | ForEach-Object { "'$_'" }) -join ', '
-    $customDetailsSection = "  custom_details             = {$customDetails}`n"
+    $customDetails = @()
+
+    foreach ($detail in $customDetailsArray) {
+        $keyValue = $detail -split ': '
+        $key = $keyValue[0].Trim()
+        $value = $keyValue[1].Trim()
+        $customDetails += "$key = `"$value`""
+    }
+
+    $customDetailsSection = "  custom_details = {`n    " + ($customDetails -join "`n    ") + "`n  }`n"
 }
+
 
 # Main Template starts here:
 @"
