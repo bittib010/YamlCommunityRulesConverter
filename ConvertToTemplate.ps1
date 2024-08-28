@@ -113,3 +113,4 @@ terraform fmt -recursive -list=false ./
 # TODO: add workspacename as a parameter to change in or consider using it as a var
 # TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead
 # TODO: outtput files to arg dest. Default to temp...
+# TODO: Remove newlines from sections that are not printed to file because not existing.

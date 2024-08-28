@@ -1,10 +1,18 @@
 # Prepare tactics
-$tacticsArray = $row.Tactics -split ', '
-$tactics = ($tacticsArray | ForEach-Object { "`"$_`"" }) -join ', '
+$tacticsOut = ""
+if ($row.Tactics) {
+    $tacticsArray = $row.Tactics -split ', '
+    $tactics = ($tacticsArray | ForEach-Object { "`"$_`"" }) -join ', '
+    $tacticsOut = "tactics                    = [$tactics] "
+}
 
 # Prepare Techniques
-$techniquesArray = $row.RelevantTechniques -split ', '
-$techniques = ($techniquesArray | ForEach-Object { "`"$($_ -split '\.')`"" }) -join ', '
+$techniquesOut = ""
+if ($row.RelevantTechniques){
+    $techniquesArray = $row.RelevantTechniques -split ', '
+    $techniques = ($techniquesArray | ForEach-Object { "`"$($_ -split '\.')`"" }) -join ', '
+    $techniquesOut = "techniques                 = [$techniques]"
+}
 
 # Prepare Entity Mappings
 $entityMappingsArray = $row.EntityMappings -split '; '
@@ -46,8 +54,6 @@ if ($entityMappingsArray -and $entityMappingsArray.Length -gt 0) {
         # End entity_mapping block
         $entityMappings += "`t}`n"
     }
-} else {
-    $entityMappings = "{}"
 }
 
 # Prepare Description to not be printed on multiple lines.
@@ -146,8 +152,8 @@ if ($row.AlertDetailsOverride) {
 
 # Prepare query to escape strings:
 # https://developer.hashicorp.com/terraform/language/expressions/strings#escape-sequences-1
+$query = $row.Query -replace "%", "%%" # Need to come first?
 $query = $row.Query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
-$query = $row.Query -replace "%", "%%" 
 
 # Main Template starts here:
 @"
@@ -158,8 +164,8 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   display_name               = "$($row.Name)"
   severity                   = "$($row.Severity)"
 
-  tactics                    = [$tactics] 
-  techniques                 = [$techniques]
+  $tacticsOut  
+  $techniquesOut
   $alertDetailsOverrideSection
   alert_rule_template_guid   = "$($row.Id)"
   alert_rule_template_version = "$($row.Version)"
