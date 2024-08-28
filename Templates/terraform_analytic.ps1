@@ -8,7 +8,7 @@ if ($row.Tactics) {
 
 # Prepare Techniques
 $techniquesOut = ""
-if ($row.RelevantTechniques){
+if ($row.RelevantTechniques) {
     $techniquesArray = $row.RelevantTechniques -split ', '
     $techniques = ($techniquesArray | ForEach-Object { "`"$($_ -split '\.')`"" }) -join ', '
     $techniquesOut = "techniques                 = [$techniques]"
@@ -45,7 +45,8 @@ if ($entityMappingsArray -and $entityMappingsArray.Length -gt 0) {
                     $entityMappings += "identifier  = `"$identifier`"`n"
                     $entityMappings += "column_name = `"$columnName`"`n"
                     $entityMappings += "}`n"
-                } else {
+                }
+                else {
                     Write-Host "Warning: Malformed field mapping encountered: $fieldMapping"
                 }
             }
@@ -64,23 +65,24 @@ $description = $description -replace "`"", "\`""
 
 # Function to convert time to ISO 8601 duration format
 function Convert-ToISO8601Duration {
-  param (
-      [string]$timeValue
-  )
+    param (
+        [string]$timeValue
+    )
 
-  if ($timeValue -match '(\d+)([hmd])') {
-      $value = $matches[1]
-      $unit = $matches[2]
+    if ($timeValue -match '(\d+)([hmd])') {
+        $value = $matches[1]
+        $unit = $matches[2]
 
-      switch ($unit) {
-          'h' { return "PT${value}H" } # Hours
-          'm' { return "PT${value}M" } # Minutes
-          'd' { return "P${value}D" }  # Days
-          default { return $timeValue } # In case it's already in ISO 8601 or unrecognized
-      }
-  } else {
-      return $timeValue # If the format doesn't match, return it as-is
-  }
+        switch ($unit) {
+            'h' { return "PT${value}H" } # Hours
+            'm' { return "PT${value}M" } # Minutes
+            'd' { return "P${value}D" }  # Days
+            default { return $timeValue } # In case it's already in ISO 8601 or unrecognized
+        }
+    }
+    else {
+        return $timeValue # If the format doesn't match, return it as-is
+    }
 }
 
 # Convert QueryPeriod and QueryFrequency to ISO 8601
@@ -111,22 +113,30 @@ $alertDetailsOverrideSection = ""
 if ($row.AlertDetailsOverride) {
     $alertDetailsOverride = ConvertFrom-Json -InputObject $row.AlertDetailsOverride
 
-# Add description format if available
-if ($alertDetailsOverride.alertDescriptionFormat) {
-    $alertDescriptionFormat = $alertDetailsOverride.alertDescriptionFormat
-    $alertDescriptionFormat = $alertDescriptionFormat.Trim('"')  # Strip first and last double quotes
+    # Add description format if available
+    if ($alertDetailsOverride.alertDescriptionFormat) {
+        $alertDescriptionFormat = $alertDetailsOverride.alertDescriptionFormat
+        $alertDescriptionFormat = $alertDescriptionFormat.Trim('"')  # Strip first and last double quotes
 
-    # Now perform the replacements
-    $alertDescriptionFormat = $alertDescriptionFormat -replace "`n|`r|'", ""
-    $alertDescriptionFormat = $alertDescriptionFormat -replace "\\", "\\"
-    $alertDescriptionFormat = $alertDescriptionFormat -replace "`"", "\`"" 
-    $alertDetailsOverrideSection += "description_format = `"$($alertDescriptionFormat)`"`n"
-}
+        # Now perform the replacements
+        $alertDescriptionFormat = $alertDescriptionFormat -replace "`n|`r|'", ""
+        $alertDescriptionFormat = $alertDescriptionFormat -replace "\\", "\\"
+        $alertDescriptionFormat = $alertDescriptionFormat -replace "`"", "\`"" 
+        $alertDetailsOverrideSection += "description_format = `"$($alertDescriptionFormat)`"`n"
+    }
 
 
     # Add display name format if available
     if ($alertDetailsOverride.alertDisplayNameFormat) {
-        $alertDetailsOverrideSection += "display_name_format = `"$($alertDetailsOverride.alertDisplayNameFormat)`"`n"
+        $displayNameFormat = $alertDetailsOverride.alertDisplayNameFormat
+        $displayNameFormat = $displayNameFormat.Trim('"')  # Strip first and last double quotes
+
+        # Now perform the replacements
+        $displayNameFormat = $displayNameFormat -replace "`n|`r|'", ""
+        $displayNameFormat = $displayNameFormat -replace "\\", "\\"
+        $displayNameFormat = $displayNameFormat -replace "`"", "\`"" 
+
+        $alertDetailsOverrideSection += "display_name_format = `"$displayNameFormat`"`n"
     }
 
     # Add severity column name if available

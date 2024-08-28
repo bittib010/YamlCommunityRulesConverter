@@ -32,7 +32,7 @@ function Generate-Templates {
 
     # Loop through each row in the CSV and generate output
     foreach ($row in $csvData) {
-        if($row.Name -contains "[Deprecated]"){
+        if ($row.Name -contains "[Deprecated]") {
             Write-Host("Skipping deprecated file: ", $row.Name)
             continue
         }
@@ -42,9 +42,16 @@ function Generate-Templates {
         # Determine the rule type based on the Type column
         $folder, $ruleType = switch ($row.Type) {
             "Scheduled Rules" { "Scheduled", "analytic" }
-            "Hunting Rules"   { "Hunting", "hunt" }
-            "NRT Rules"       { "NRT", "nrt" }
-            default           { "Unknown", "unknown" }
+            "Hunting Rules" { "Hunting", "hunt" }
+            "NRT Rules" { "NRT", "nrt" }
+            default { "Unknown", "unknown" }
+        }
+
+        if ($ruleType -eq "analytic") {
+            if ($null -eq $row.Severity) {
+                Write-Error("The rule with ID $($row.Id) is a Scheduled rule($ruleType), but is missing Severity ($($row.Severity))")
+                continue
+            }
         }
 
         # Check if a valid template exists for the combination of outputType and ruleType
@@ -56,23 +63,9 @@ function Generate-Templates {
             continue  # Skip to the next row if the combination is invalid
         }
 
+        # Add variables that could be reached inside each template (all $row.<column> are available)
         # Prepare unique guid for each rule
         $guid = [guid]::NewGuid()
-
-        # Define variables that will be used in the template
-        $Id = $row.Id
-        $Name = $row.Name
-        $Description = $row.Description
-        $Query = $row.Query
-        $Severity = $row.Severity
-        $QueryPeriod = $row.QueryPeriod
-        $QueryFrequency = $row.QueryFrequency
-        $Tactics = $row.Tactics
-        $TriggerThreshold = $row.TriggerThreshold
-        $TriggerOperator = $row.TriggerOperator
-        $Version = $row.Version
-        $RelevantTechniques = $row.RelevantTechniques
-        $EntityMappings = $row.EntityMappings
 
         # Execute the template script
         $output = & $templatePath
@@ -83,7 +76,8 @@ function Generate-Templates {
 
         if ($outputType -eq "yaml") {
             $outputFilePath += ".yaml"
-        } elseif ($outputType -eq "terraform") {
+        }
+        elseif ($outputType -eq "terraform") {
             $outputFilePath += ".tf"
         }
 
