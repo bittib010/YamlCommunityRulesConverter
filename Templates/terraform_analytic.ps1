@@ -56,10 +56,32 @@ $description = $description -replace "`n|`r|'", ""
 $description = $description -replace "\\", "\\"
 $description = $description -replace "`"", "\`"" 
 
-$query = $row.Query
-$queryPeriod = $row.QueryPeriod
-$queryFrequency = $row.QueryFrequency
-$TriggerThreshold = $row.TriggerThreshold
+# Function to convert time to ISO 8601 duration format
+function Convert-ToISO8601Duration {
+  param (
+      [string]$timeValue
+  )
+
+  if ($timeValue -match '(\d+)([hmd])') {
+      $value = $matches[1]
+      $unit = $matches[2]
+
+      switch ($unit) {
+          'h' { return "PT${value}H" } # Hours
+          'm' { return "PT${value}M" } # Minutes
+          'd' { return "P${value}D" }  # Days
+          default { return $timeValue } # In case it's already in ISO 8601 or unrecognized
+      }
+  } else {
+      return $timeValue # If the format doesn't match, return it as-is
+  }
+}
+
+# Convert QueryPeriod and QueryFrequency to ISO 8601
+$queryPeriod = Convert-ToISO8601Duration -timeValue $row.QueryPeriod
+$queryFrequency = Convert-ToISO8601Duration -timeValue $row.QueryFrequency
+
+$TriggerThreshold = $row.TriggerThreshold 
 $TriggerOperator = $row.TriggerOperator
 
 # Prepare custom details if available
@@ -115,7 +137,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   query_frequency            = "$queryFrequency"
   query_period               = "$queryPeriod"
   query                      = <<QUERY
-$query
+$($row.Query)
 QUERY
 }
 "@

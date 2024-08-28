@@ -1,10 +1,13 @@
-resource "azurerm_sentinel_alert_rule_nrt" "{{GUID}}" {
+# Main Template starts here:
+@"
+resource "azurerm_sentinel_alert_rule_nrt" "nrt_$guid" {
   https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/sentinel_alert_rule_nrt
-  name                       = "{{GUID}}"
+  name                       = "$guid"
   log_analytics_workspace_id = var.log_analytics_workspace_id
-  display_name               = "{{Name}}"
-  severity                   = "{{Severity}}"
+  display_name               = "$($row.Name)"
+  severity                   = "$($row.Severity)"
   query                      = <<QUERY
-{{Query}}
+$($row.Query)
 QUERY
 }
+"@

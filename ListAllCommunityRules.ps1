@@ -164,6 +164,7 @@ Function Process-YamlFile {
         Severity              = $yamlContent.severity
         QueryFrequency        = $yamlContent.queryFrequency
         QueryPeriod           = $yamlContent.queryPeriod
+        Query                 = $yamlContent.query
         TriggerOperator       = $yamlContent.triggerOperator
         TriggerThreshold      = $yamlContent.triggerThreshold
         SuppressionEnabled    = $yamlContent.suppressionEnabled
