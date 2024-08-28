@@ -32,7 +32,10 @@ function Generate-Templates {
 
     # Loop through each row in the CSV and generate output
     foreach ($row in $csvData) {
-
+        if($row.Name -contains "[Deprecated]"){
+            Write-Host("Skipping deprecated file: ", $row.Name)
+            continue
+        }
         # Generate a new GUID for each row
         $guid = [guid]::NewGuid().ToString()
 

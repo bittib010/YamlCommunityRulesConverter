@@ -6,8 +6,8 @@ resource "azurerm_sentinel_alert_rule_nrt" "nrt_$guid" {
   log_analytics_workspace_id = var.log_analytics_workspace_id
   display_name               = "$($row.Name)"
   severity                   = "$($row.Severity)"
-  query                      = <<QUERY
+  query                      = <<-EOQUERY
 $($row.Query)
-QUERY
+EOQUERY
 }
 "@

@@ -100,6 +100,54 @@ if ($row.CustomDetails) {
     $customDetailsSection = "  custom_details = {`n    " + ($customDetails -join "`n    ") + "`n  }`n"
 }
 
+# Prepare alert details override section if available
+$alertDetailsOverrideSection = ""
+if ($row.AlertDetailsOverride) {
+    $alertDetailsOverride = ConvertFrom-Json -InputObject $row.AlertDetailsOverride
+
+    # Add description format if available
+    if ($alertDetailsOverride.alertDescriptionFormat) {
+        $alertDescriptionFormat = $alertDetailsOverride.alertDescriptionFormat
+        $alertDescriptionFormat = $description -replace "`n|`r|'", ""
+        $alertDescriptionFormat = $description -replace "\\", "\\"
+        $alertDescriptionFormat = $description -replace "`"", "\`"" 
+        $alertDetailsOverrideSection += "description_format = `"$($alertDescriptionFormat)`"`n"
+    }
+
+    # Add display name format if available
+    if ($alertDetailsOverride.alertDisplayNameFormat) {
+        $alertDetailsOverrideSection += "display_name_format = `"$($alertDetailsOverride.alertDisplayNameFormat)`"`n"
+    }
+
+    # Add severity column name if available
+    if ($alertDetailsOverride.alertSeverityColumnName) {
+        $alertDetailsOverrideSection += "severity_column_name = `"$($alertDetailsOverride.alertSeverityColumnName)`"`n"
+    }
+
+    # Add tactics column name if available
+    if ($alertDetailsOverride.alertTacticsColumnName) {
+        $alertDetailsOverrideSection += "tactics_column_name = `"$($alertDetailsOverride.alertTacticsColumnName)`"`n"
+    }
+
+    # Handle dynamic properties if available
+    if ($alertDetailsOverride.alertDynamicProperties) {
+        foreach ($dynamicProperty in $alertDetailsOverride.alertDynamicProperties) {
+            $alertDetailsOverrideSection += "dynamic_property {`n"
+            $alertDetailsOverrideSection += "  alert_property = `"$($dynamicProperty.alertProperty)`"`n"
+            $alertDetailsOverrideSection += "  value = `"$($dynamicProperty.value)`"`n"
+            $alertDetailsOverrideSection += "}`n"
+        }
+    }
+
+    if ($alertDetailsOverrideSection) {
+        $alertDetailsOverrideSection = "  alert_details_override {`n" + $alertDetailsOverrideSection + "  }`n"
+    }
+}
+
+# Prepare query to escape strings:
+# https://developer.hashicorp.com/terraform/language/expressions/strings#escape-sequences-1
+$query = $row.Query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
+$query = $row.Query -replace "%", "%%" 
 
 # Main Template starts here:
 @"
@@ -112,7 +160,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
 
   tactics                    = [$tactics] 
   techniques                 = [$techniques]
-  alert_details_override     = {}
+  $alertDetailsOverrideSection
   alert_rule_template_guid   = "$($row.Id)"
   alert_rule_template_version = "$($row.Version)"
 
@@ -136,8 +184,8 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   }
   query_frequency            = "$queryFrequency"
   query_period               = "$queryPeriod"
-  query                      = <<QUERY
-$($row.Query)
-QUERY
+  query                      = <<EOQUERY
+$query
+EOQUERY
 }
 "@

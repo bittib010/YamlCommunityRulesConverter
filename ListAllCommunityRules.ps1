@@ -149,6 +149,12 @@ if ($yamlContent.metadata) {
     $metadataJson = $yamlContent.metadata | ConvertTo-Json -Compress
 }
 
+# Flatten alert details override into a JSON string for easier storage in CSV
+$alertDetailsOverrideJson = ""
+if ($yamlContent.alertDetailsOverride) {
+    $alertDetailsOverrideJson = $yamlContent.alertDetailsOverride | ConvertTo-Json -Compress
+}
+
 return @{
     Id                    = $yamlContent.id
     Name                  = $yamlContent.name
@@ -171,8 +177,8 @@ return @{
     EntityMappings        = $entityMappings.TrimEnd("; ")
     CustomDetails         = $customDetails
     Metadata              = $metadataJson
-} + $tags + $incidentConfig + $eventGrouping + $alertDetails
-
+    AlertDetailsOverride  = $alertDetailsOverrideJson
+} + $tags + $incidentConfig + $eventGrouping
 }
 
 Function Search-AzureSentinelRepo {
