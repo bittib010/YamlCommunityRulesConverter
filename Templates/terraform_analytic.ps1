@@ -111,14 +111,18 @@ $alertDetailsOverrideSection = ""
 if ($row.AlertDetailsOverride) {
     $alertDetailsOverride = ConvertFrom-Json -InputObject $row.AlertDetailsOverride
 
-    # Add description format if available
-    if ($alertDetailsOverride.alertDescriptionFormat) {
-        $alertDescriptionFormat = $alertDetailsOverride.alertDescriptionFormat
-        $alertDescriptionFormat = $description -replace "`n|`r|'", ""
-        $alertDescriptionFormat = $description -replace "\\", "\\"
-        $alertDescriptionFormat = $description -replace "`"", "\`"" 
-        $alertDetailsOverrideSection += "description_format = `"$($alertDescriptionFormat)`"`n"
-    }
+# Add description format if available
+if ($alertDetailsOverride.alertDescriptionFormat) {
+    $alertDescriptionFormat = $alertDetailsOverride.alertDescriptionFormat
+    $alertDescriptionFormat = $alertDescriptionFormat.Trim('"')  # Strip first and last double quotes
+
+    # Now perform the replacements
+    $alertDescriptionFormat = $alertDescriptionFormat -replace "`n|`r|'", ""
+    $alertDescriptionFormat = $alertDescriptionFormat -replace "\\", "\\"
+    $alertDescriptionFormat = $alertDescriptionFormat -replace "`"", "\`"" 
+    $alertDetailsOverrideSection += "description_format = `"$($alertDescriptionFormat)`"`n"
+}
+
 
     # Add display name format if available
     if ($alertDetailsOverride.alertDisplayNameFormat) {
@@ -152,7 +156,7 @@ if ($row.AlertDetailsOverride) {
 
 # Prepare query to escape strings:
 # https://developer.hashicorp.com/terraform/language/expressions/strings#escape-sequences-1
-$query = $row.Query -replace "%", "%%" # Need to come first?
+$query = $row.Query -replace "%", "%%" # Need to come first or else the below replace is destroyed somehow
 $query = $row.Query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
 
 # Main Template starts here:
