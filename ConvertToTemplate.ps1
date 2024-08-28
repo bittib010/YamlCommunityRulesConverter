@@ -72,7 +72,7 @@ function Generate-Templates {
 
         # Determine the output file path and extension
         $outputFileName = "$($row.Name)".Replace(' ', '_').Replace(':', '').Replace('/', '').Replace('\', '')
-        $outputFilePath = ".\temp\$folder\$outputFileName"
+        $outputFilePath = ".\temp\Rules\$folder\$outputFileName"
 
         if ($outputType -eq "yaml") {
             $outputFilePath += ".yaml"
