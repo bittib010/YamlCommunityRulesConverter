@@ -1,3 +1,11 @@
+[CmdletBinding()]
+# Check for command-line arguments and set defaults if necessary
+param (
+    [string]$csvPath = ".\temp\AzureSentinelRules.csv",
+    [string]$outputType = "terraform",
+    [string]$templateFolderPath = ".\Templates"
+)
+
 # Function to load templates from files
 function Load-TemplateFiles {
     param (
@@ -19,9 +27,9 @@ function Load-TemplateFiles {
 # Function to generate the output based on arguments
 function Generate-Templates {
     param (
-        [string]$csvPath,
-        [string]$outputType,
-        [string]$templateFolderPath
+        [string]$csvPath = ".\temp\AzureSentinelRules.csv",
+        [string]$outputType = "terraform",  # or "yaml"
+        [string]$templateFolderPath = ".\Templates"
     )
 
     # Load templates from the specified folder
@@ -93,15 +101,10 @@ function Generate-Templates {
     }
 }
 
-# Example of running the function with different arguments
-$csvPath = ".\temp\AzureSentinelRules.csv"
-$outputType = "terraform"  # or "yaml"
-$templateFolderPath = ".\Templates"
-
 Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
 # Format according to official style and do not display format changes
-Write-Output ("Formatting all rules........")
+Write-Output ("Formatting all rules with 'terraform fmt -recursive -list=false ./'")
 terraform fmt -recursive -list=false ./ 
 
 # TODO: outtput files to arg dest. Default to temp...

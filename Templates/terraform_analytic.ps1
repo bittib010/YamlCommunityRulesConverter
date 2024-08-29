@@ -179,8 +179,9 @@ if ($row.AlertDetailsOverride) {
 
 # Prepare query to escape strings:
 # https://developer.hashicorp.com/terraform/language/expressions/strings#escape-sequences-1
-$query = $row.Query -replace "%", "%%" # Need to come first or else the below replace is destroyed somehow
-$query = $row.Query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
+$query = $row.Query
+$query = $query -replace "%", "%%" 
+$query = $query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
 
 # Main Template starts here:
 @"
