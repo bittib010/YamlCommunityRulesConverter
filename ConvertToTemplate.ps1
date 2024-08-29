@@ -104,8 +104,6 @@ Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath
 Write-Output ("Formatting all rules........")
 terraform fmt -recursive -list=false ./ 
 
-# TODO: add workspacename as a parameter to change in or consider using it as a var
-# TODO: Strip newlines inside description to be escaped newlines instead and then Sentinel can handle it instead
 # TODO: outtput files to arg dest. Default to temp...
 # TODO: Remove newlines from sections that are not printed to file because not existing.
 # TODO: Azure repo fixes to do:
@@ -114,3 +112,5 @@ terraform fmt -recursive -list=false ./
 #           - Fix naming conventions using square brackets
 # Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
 # Terraform entitymappings
+# Add fields to CSV to tell when the rule was first added, this will yield dates to track new rules with as well.
+# TODO: add --all to convert all files or default to only selected, meaning all that has the enabled column set to true.
