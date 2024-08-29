@@ -112,3 +112,5 @@ terraform fmt -recursive -list=false ./
 #           - Fix formatting on yaml files with MDE, MDO and more starting filenames
 #           - Fix missing severity on scheduled rules
 #           - Fix naming conventions using square brackets
+# Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
+# Terraform entitymappings

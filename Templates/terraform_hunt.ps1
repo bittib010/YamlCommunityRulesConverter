@@ -28,6 +28,11 @@ if ($row.RelevantTechniques) {
     $versionTags = "    `"techniques`"                     = `"$($row.Version)`""
 }
 
+if ($row.Description){
+  "`"description`"                 : `"$description`","
+
+}
+
 
 # Main Template starts here:
 @"
