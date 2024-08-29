@@ -82,11 +82,17 @@ function Generate-Templates {
         $outputFileName = "$($row.Name)".Replace(' ', '_').Replace(':', '').Replace('/', '').Replace('\', '')
         $outputFilePath = ".\temp\Rules\$folder\$outputFileName"
 
-        if ($outputType -eq "yaml") {
-            $outputFilePath += ".yaml"
+        if ($outputType -eq "bicep") {
+            $outputFilePath += ".bicep"
         }
-        elseif ($outputType -eq "terraform") {
+        elseif ($outputType -eq "tfazurerm") {
             $outputFilePath += ".tf"
+        }
+        elseif ($outputType -eq "tfazapi") {
+            $outputFilePath += ".tf"
+        }
+        elseif ($outputType -eq "jsonApi") {
+            $outputFilePath += ".json"
         }
 
         # Ensure the directory exists

@@ -27,7 +27,21 @@ All rules are divided into "analytic", "hunt" and "nrt". Meaning that if you wan
 - \<lang\>_analytic.ps1
 - \<lang\>_hunt.ps1
 - \<lang\>_nrt.ps1
-:
+
+When files has been created add a new "elseif" clause to this part of the file:
+```powershell
+if ($outputType -eq "yaml") {
+    $outputFilePath += ".yaml"
+}
+elseif ($outputType -eq "terraform") {
+    $outputFilePath += ".tf"
+} # Change the below to your need
+elseif ($outputType -eq "<language>") {
+            $outputFilePath += ".<extension>"
+        }
+```
+The language will be the argument to be used when calling the script to convert to this language. The extension will be added to the output file of each rule.
+
 Below is a simplified example of hunting rule in Terraform
 ```powershell
 # Prepare any needed structure here based
