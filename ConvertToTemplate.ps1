@@ -103,17 +103,17 @@ function Generate-Templates {
 
 Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
-# Format according to official style and do not display format changes
-Write-Output ("Formatting all rules with 'terraform fmt -recursive -list=false ./'")
-terraform fmt -recursive -list=false ./ 
-
-# TODO: outtput files to arg dest. Default to temp...
+elseif ($outputType -eq "terraform") {
+    Write-Output ("Formatting all rules with 'terraform fmt -recursive -list=false ./'")
+    terraform fmt -recursive -list=false ./ 
+}
+# TODO: output files to arg dest. Default to temp...
 # TODO: Remove newlines from sections that are not printed to file because not existing.
 # TODO: Azure repo fixes to do:
 #           - Fix formatting on yaml files with MDE, MDO and more starting filenames
 #           - Fix missing severity on scheduled rules
 #           - Fix naming conventions using square brackets
 # Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
-# Terraform entitymappings
+# Terraform hunting entitymappings
 # Add fields to CSV to tell when the rule was first added, this will yield dates to track new rules with as well.
 # TODO: add --all to convert all files or default to only selected, meaning all that has the enabled column set to true.
