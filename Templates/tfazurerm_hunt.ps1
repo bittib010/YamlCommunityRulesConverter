@@ -46,6 +46,11 @@ $query = $row.Query
 $query = $query -replace "%", "%%" 
 $query = $query -replace "\$", "`$`$`$`$" # Needs four to create two and escaping differs when used like this
 
+# Prepare hunting entitymaps
+# entity mappings are created inside the query itself with special syntax
+# Check for existing "_0_", if present, entitymappings exists already
+# If not, create them:
+
 # Main Template starts here:
 @"
 resource "azurerm_log_analytics_saved_search" "hunt_$guid" {

@@ -6,17 +6,16 @@ Preferably install the extension to view CSV in a table: janisdd.vscode-edit-csv
 
 Run without Prettier
 
-Run to get and convert all rules to Terraform.
+Run to get and convert all rules to Terraform AzureRM.
 ```powershell
 ./ListAllCommunityRules.ps1
-ConvertToTemplate.ps1
+\# With filenames set to ID of the rule
+.\ConvertToTemplate.ps1 -outputType "tfazurerm" -useIdAsFileName
+\# With filenames set to the rulename itself:
+.\ConvertToTemplate.ps1 -outputType "tfazurerm"
 ```
 
-Run to get and convert all rules to Bicep
-```powershell
-./ListAllCommunityRules.ps1
-ConvertToTemplate.ps1
-```
+
 # Contributing
 Contributions are very much appreciated. Below is an explanation to do so, and I've tried making it a bit beginner friendly as well.
 
@@ -30,14 +29,20 @@ All rules are divided into "analytic", "hunt" and "nrt". Meaning that if you wan
 
 When files has been created add a new "elseif" clause to this part of the file:
 ```powershell
-if ($outputType -eq "yaml") {
-    $outputFilePath += ".yaml"
+if ($outputType -eq "bicep") {
+    $outputFilePath = ".\temp\BicepRules\$folder\$outputFileName.bicep"
 }
-elseif ($outputType -eq "terraform") {
-    $outputFilePath += ".tf"
-} # Change the below to your need
+elseif ($outputType -eq "tfazurerm") {
+    $outputFilePath = ".\temp\TerraformAzRMRules\$folder\$outputFileName.tf"
+}
+elseif ($outputType -eq "tfazapi") {
+    $outputFilePath = ".\temp\TerraformAzApiRules\$folder\$outputFileName.tf"
+}
+elseif ($outputType -eq "jsonApi") {
+    $outputFilePath = ".\temp\jsonApiRules\$folder\$outputFileName.json"
+} # Change or add the below to your need
 elseif ($outputType -eq "<language>") {
-            $outputFilePath += ".<extension>"
+            $outputFilePath += ".\temp\<language>Rules\$folder\$outputFileName.<extension>"
         }
 ```
 The language will be the argument to be used when calling the script to convert to this language. The extension will be added to the output file of each rule.
