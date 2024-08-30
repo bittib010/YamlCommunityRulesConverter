@@ -49,7 +49,7 @@ The language will be the argument to be used when calling the script to convert 
 
 Below is a simplified example of hunting rule in Terraform
 ```powershell
-# Prepare any needed structure here based
+# Prepare any needed variables based on each $row.Column
 # Prepare ID if available
 $idTags = ""
 if ($row.Id) {
