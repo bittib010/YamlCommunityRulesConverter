@@ -97,8 +97,8 @@ function Generate-Templates {
         elseif ($outputType -eq "tfazapi") {
             $outputFilePath = ".\temp\TerraformAzApiRules\$folder\$outputFileName.tf"
         }
-        elseif ($outputType -eq "jsonApi") {
-            $outputFilePath = ".\temp\jsonApiRules\$folder\$outputFileName.json"
+        elseif ($outputType -eq "arm") {
+            $outputFilePath = ".\temp\ARMRules\$folder\$outputFileName.json"
         }
         else {
             Write-Error($outputType, " does not exist")

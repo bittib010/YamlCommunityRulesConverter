@@ -103,7 +103,24 @@ $TriggerThreshold = ""
 if($row.TriggerThreshold){
     $TriggerThreshold = "trigger_threshold          = $($row.TriggerThreshold)"
 }
-$TriggerOperator = $row.TriggerOperator
+
+# Prepare TriggerOperator
+$triggerOperator = $row.TriggerOperator
+if($triggerOperator){
+    if ($triggerOperator -eq "gt") {
+        $triggerOperator = "GreaterThan"
+    }
+    elseif ($triggerOperator -eq "lt") {
+        $triggerOperator = "LessThan"
+    }
+    elseif ($triggerOperator -eq "eq") {
+        $triggerOperator = "Equal"
+    }
+    elseif ($triggerOperator -eq "ne") {
+        $triggerOperator = "NotEqual"
+    }
+    $triggerOperator = "trigger_operator = `"$($triggerOperator )`""
+}
 
 # Prepare custom details if available
 $customDetailsSection = ""
@@ -198,7 +215,8 @@ resource "azurerm_sentinel_alert_rule_scheduled" "ar_$guid" {
   alert_rule_template_guid   = "$($row.Id)"
   alert_rule_template_version = "$($row.Version)"
 
-  $TriggerThreshold
+  $triggerThreshold
+  $triggerOperator
 
   $customDetailsSection  
   description                = "$description" 

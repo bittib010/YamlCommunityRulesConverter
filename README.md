@@ -42,8 +42,8 @@ elseif ($outputType -eq "jsonApi") {
     $outputFilePath = ".\temp\jsonApiRules\$folder\$outputFileName.json"
 } # Change or add the below to your need
 elseif ($outputType -eq "<language>") {
-            $outputFilePath += ".\temp\<language>Rules\$folder\$outputFileName.<extension>"
-        }
+    $outputFilePath += ".\temp\<language>Rules\$folder\$outputFileName.<extension>"
+}
 ```
 The language will be the argument to be used when calling the script to convert to this language. The extension will be added to the output file of each rule.
 
