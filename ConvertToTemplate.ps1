@@ -131,7 +131,6 @@ if ($outputType -eq "tfazurerm" || $outputType -eq "azapi") {
 #           - Fix missing severity on scheduled rules
 #           - Fix naming conventions using square brackets
 # Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
-# Terraform hunting entitymappings
 # Add fields to CSV to tell when the rule was first added, this will yield dates to track new rules with as well.
 # TODO: add --all to convert all files or default to only selected, meaning all that has the enabled column set to true.
 # TODO: Create an activator function/ps1 file that serves as a way to activate (set to true) rules that apply to a certain maximum of connectors/tables...
