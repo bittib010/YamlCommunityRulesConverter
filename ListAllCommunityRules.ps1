@@ -5,7 +5,6 @@ Import-Module powershell-yaml
 $TempFolder = ".\temp\Azure-Sentinel"
 $OutputCsv = ".\temp\AzureSentinelRules.csv"
 
-
 Function Get-YamlContent {
     param(
         [string]$filePath
@@ -27,8 +26,15 @@ Function Process-YamlFile {
         [hashtable]$existingRules
     )
 
+    if ($filePath -like "*invalidFile.yaml") {
+        return $null
+    }
+
     $yamlContent = Get-YamlContent -filePath $filePath
+
     if ($null -eq $yamlContent -or $null -eq $yamlContent.id -or [string]::IsNullOrEmpty($yamlContent.name) -or [string]::IsNullOrEmpty($yamlContent.query)) {
+        return $null
+    } elseif ([String]$yamlContent.name -match "\[Deprecated\]") {
         return $null
     }
 
@@ -43,6 +49,8 @@ Function Process-YamlFile {
     $relativePath = $relativePath -replace '\\', '/'
     $link = "https://github.com/Azure/Azure-Sentinel/blob/master/$relativePath"
 
+    $isNewRule = $false
+
     # Check if the rule already exists to preserve the "Added" date and "CurrentlyEnabled" state
     if ($existingRules.ContainsKey($yamlContent.id)) {
         $existingRule = $existingRules[$yamlContent.id]
@@ -51,7 +59,7 @@ Function Process-YamlFile {
     } else {
         $addedDate = Get-Date
         $currentlyEnabled = $false
-        Write-Host "New rule added with Id: $($yamlContent.id)"
+        $isNewRule = $true  # Mark this rule as new
     }
 
     # Handle Entity Mappings
@@ -139,7 +147,7 @@ Function Process-YamlFile {
         $alertDetailsOverrideJson = $yamlContent.alertDetailsOverride | ConvertTo-Json -Compress
     }
 
-    return @{
+    $rule = @{
         Id                    = $yamlContent.id
         Name                  = $yamlContent.name
         Description           = $yamlContent.description
@@ -164,6 +172,12 @@ Function Process-YamlFile {
         AlertDetailsOverride  = $alertDetailsOverrideJson
         CurrentlyEnabled      = $currentlyEnabled
     } + $tags + $incidentConfig + $eventGrouping
+
+    if ($isNewRule) {
+        Write-Host "New rule added with Id: $($yamlContent.id)"
+    }
+
+    return $rule
 }
 
 Function Search-AzureSentinelRepo {
@@ -185,42 +199,23 @@ Function Search-AzureSentinelRepo {
     return $newRulesList
 }
 
-Function Format-RepoWithPrettier {
-    param (
-        [string]$repoDirectory
-    )
-
-    $prettierPath = (Get-Command "prettier").Source
-    if ($null -eq $prettierPath) {
-        Write-Error "Prettier is not installed or not found in the system path."
-        return
-    }
-
-    Push-Location $repoDirectory
-    try {
-        & $prettierPath --write "**/*.yaml"
-        Write-Host "YAML files have been formatted with Prettier."
-    }
-    catch {
-        Write-Error "Failed to format YAML files with Prettier. Error: $_"
-    }
-    finally {
-        Pop-Location
-    }
-}
-
 Function Export-RulesToCsv {
     param(
         [array]$rulesList,
         [string]$csvPath
     )
 
+    if ($rulesList.Count -eq 0) {
+        Write-Host "No valid rules found to export. Skipping CSV export."
+        return
+    }
+
     $csvData = $rulesList | ForEach-Object {
         [PSCustomObject]$_
     }
 
     $csvData | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "Rules exported to $csvPath"
+    Write-Host "$($rulesList.Count) rules exported to $csvPath"
 }
 
 Function Import-ExistingRules {
