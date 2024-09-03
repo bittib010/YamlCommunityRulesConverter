@@ -24,7 +24,7 @@ function Load-TemplateFiles {
             $templates[$templateName] = $file.FullName
         }
     }
-
+    
     return $templates
 }
 
@@ -61,7 +61,7 @@ function Generate-Templates {
         $templatePath = $templates[$templateKey]
 
         if (-not $templatePath) {
-            Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType ($($row.Type))"
+            Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType."
             continue
         }
 

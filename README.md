@@ -15,16 +15,16 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 ```
 
 Preferably install the extension to view CSV in a table: janisdd.vscode-edit-csv
+# Running
 
-Run without Prettier
-
-Run to get and convert all rules to Terraform AzureRM.
 ```powershell
 ./ListAllCommunityRules.ps1
 # With filenames set to ID of the rule
 .\ConvertToTemplate.ps1 -outputType "tfazurerm" -useIdAsFileName
-# With filenames set to the rulename itself:
+# With filenames set to the rulename itself, with spaces as underscores:
 .\ConvertToTemplate.ps1 -outputType "tfazurerm"
+# Convert ALL possible rules instead of only the enabled ones
+.\ConvertToTemplate.ps1 -outputType "tfazurerm" -convertAll
 ```
 
 
