@@ -10,7 +10,8 @@ param (
 
 function Load-TemplateFiles {
     param (
-        [string]$templateFolderPath
+        [string]$templateFolderPath,
+        [string]$outputType
     )
 
     $templateFiles = Get-ChildItem -Path $templateFolderPath -Filter "*.ps1"
@@ -18,8 +19,10 @@ function Load-TemplateFiles {
 
     foreach ($file in $templateFiles) {
         $templateName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        Write-Host "Loading template: $templateName from file: $($file.FullName)" -ForegroundColor Cyan
-        $templates[$templateName] = $file.FullName
+        if($templateName.Split("_")[0] -eq $outputType){
+            Write-Host "Loading template: $templateName from file: $($file.FullName)" -ForegroundColor Cyan
+            $templates[$templateName] = $file.FullName
+        }
     }
 
     return $templates
@@ -32,7 +35,7 @@ function Generate-Templates {
         [string]$templateFolderPath
     )
 
-    $templates = Load-TemplateFiles -templateFolderPath $templateFolderPath
+    $templates = Load-TemplateFiles -templateFolderPath $templateFolderPath -outputType $outputType
     $csvData = Import-Csv -Path $csvPath
 
     foreach ($row in $csvData) {
