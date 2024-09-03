@@ -1,7 +1,19 @@
 # YamlCommunityRulesConverter
 This script downloads the entier Azure Sentinel repo, looks for all Scheduled rules, NRT rules and hunting rules. Goes through them and translates all rules into a row within a CSV file. This CSV file is then used to go through to easily find all values needed to rebuild the rule in a given format via a template file.
 
+## Limitations
+- Only tested on Windows
+- Works best with Powershell7
+- Currently only azurerm templates with fully conversion added, but tested in practice.
+- Error messages still warning on too long filepaths even after enabling Windows Long Path. It may be beneficial to run the script as close to C: as possible.
+
 ## Requirements
+
+Enable Windows Long Path by running (https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell):
+```powershell
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+
 Preferably install the extension to view CSV in a table: janisdd.vscode-edit-csv
 
 Run without Prettier
