@@ -4,11 +4,10 @@ param (
     [string]$outputType,
     [string]$templateFolderPath = ".\Templates",
     [switch]$useIdAsFileName,
-    [switch]$convertAll,  # Overrides convertEnabled if specified
-    [switch]$convertEnabled = $True  # Default to converting only enabled rules
+    [switch]$convertAll,
+    [switch]$convertEnabled = $True
 )
 
-# Function to load templates from files
 function Load-TemplateFiles {
     param (
         [string]$templateFolderPath
@@ -26,7 +25,6 @@ function Load-TemplateFiles {
     return $templates
 }
 
-# Function to generate the output based on arguments
 function Generate-Templates {
     param (
         [string]$csvPath,
@@ -34,47 +32,36 @@ function Generate-Templates {
         [string]$templateFolderPath
     )
 
-    # Load templates from the specified folder
     $templates = Load-TemplateFiles -templateFolderPath $templateFolderPath
-
-    # Load CSV file
     $csvData = Import-Csv -Path $csvPath
 
-    # Loop through each row in the CSV and generate output
     foreach ($row in $csvData) {
-        
-        # Decide whether to skip the rule based on $convertAll and $convertEnabled
         if (-not $convertAll -and $convertEnabled -and $row.CurrentlyEnabled -ne "True") {
-            # Write-Host "Skipping rule $($row.Name) as it is not enabled and convertAll is not set." -ForegroundColor Yellow
+            #Write-Host "Skipping rule $($row.Name) as it is not enabled and convertAll is not set." -ForegroundColor Yellow
             continue
         }
-    
-        # Generate a new GUID for each row
+
         $guid = [guid]::NewGuid().ToString()
-    
-        # Determine the rule type based on the Type column
         $folder, $ruleType = switch ($row.Type) {
             "Scheduled Rules" { "Scheduled", "analytic" }
             "Hunting Rules" { "Hunting", "hunt" }
             "NRT Rules" { "NRT", "nrt" }
             default { "Unknown", "unknown" }
         }
-    
-        if ($ruleType -eq "analytic" -and $null -eq $row.Severity) {
+
+        if ($ruleType -eq "analytic" -and -not $row.Severity) {
             Write-Error "The rule with ID $($row.Id) is a Scheduled rule($ruleType), but is missing Severity."
             continue
         }
-    
-        # Check if a valid template exists for the combination of outputType and ruleType
+
         $templateKey = "${outputType}_${ruleType}"
         $templatePath = $templates[$templateKey]
-    
+
         if (-not $templatePath) {
             Write-Error "Invalid combination of outputType and ruleType: $outputType, $ruleType ($($row.Type))"
-            continue  # Skip to the next row if the combination is invalid
+            continue
         }
-        
-        # Execute the template script
+
         $output = & $templatePath
     
         # Determine the output file name based on the switch
@@ -97,8 +84,7 @@ function Generate-Templates {
         if (-not (Test-Path $outputDirectory)) {
             New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
         }
-    
-        # Write the final template to a file
+
         Set-Content -Path $outputFilePath -Value $output
         Write-Host "Generated file: $outputFilePath" -ForegroundColor Green
     }
@@ -107,14 +93,15 @@ function Generate-Templates {
 if (Test-Path $csvPath) {
     Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
-    if ($outputType -eq "tfazurerm" -or $outputType -eq "azapi") {
+    if ($outputType -in @("tfazurerm", "azapi")) {
         Write-Output "Formatting all rules with 'terraform fmt -recursive -list=false ./'"
-        terraform fmt -recursive -list=false ./ 
+        terraform fmt -recursive -list=false ./
     }
 }
 else {
     Write-Host "$csvPath does not exist. Run ListAllCommunityRules.ps1 before running this script."
 }
+
 
 
 
