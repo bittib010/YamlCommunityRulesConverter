@@ -1,5 +1,30 @@
-# Import the required module for YAML processing
-Import-Module powershell-yaml
+# Function to ensure powershell-yaml module is available
+function Test-RequiredModules {
+    $moduleNames = @("powershell-yaml")
+    
+    foreach ($moduleName in $moduleNames) {
+        try {
+            if (-not (Get-Module -ListAvailable -Name $moduleName)) {
+                Write-Verbose "PowerShell-Yaml module not found. Attempting to install..."
+                Install-Module -Name $moduleName -Force -Scope CurrentUser -ErrorAction Stop
+                Write-Verbose "PowerShell-Yaml module installed successfully."
+            }
+            else {
+                Write-Verbose "PowerShell-Yaml module is already installed."
+            }
+
+            Import-Module $moduleName -ErrorAction Stop
+            Write-Verbose "PowerShell-Yaml module imported successfully."
+        }
+        catch {
+            Write-Error "Failed to install or import the PowerShell-Yaml module: $_"
+            throw
+        }
+    }
+}
+
+# Ensure requiuired modules are available
+Test-RequiredModules
 
 # Set the path to the cloned Azure-Sentinel directory
 $TempFolder = ".\temp\Azure-Sentinel"
@@ -32,16 +57,19 @@ Function Process-YamlFile {
 
     $yamlContent = Get-YamlContent -filePath $filePath
 
+    
+
     if ($null -eq $yamlContent -or $null -eq $yamlContent.id -or [string]::IsNullOrEmpty($yamlContent.name) -or [string]::IsNullOrEmpty($yamlContent.query)) {
         return $null
-    } elseif ([String]$yamlContent.name -match "\[Deprecated\]") {
+    }
+    elseif ([String]$yamlContent.name -match "\[Deprecated\]") {
         return $null
     }
 
     $type = switch ($yamlContent.kind) {
         "scheduled" { "Scheduled Rules" }
-        "nrt"       { "NRT Rules" }
-        default     { "Hunting Rules" }
+        "nrt" { "NRT Rules" }
+        default { "Hunting Rules" }
     }
 
     # Generate the correct GitHub link
@@ -56,7 +84,8 @@ Function Process-YamlFile {
         $existingRule = $existingRules[$yamlContent.id]
         $addedDate = $existingRule.Added
         $currentlyEnabled = $existingRule.CurrentlyEnabled
-    } else {
+    }
+    else {
         $addedDate = Get-Date
         $currentlyEnabled = $false
         $isNewRule = $true  # Mark this rule as new
@@ -147,30 +176,35 @@ Function Process-YamlFile {
         $alertDetailsOverrideJson = $yamlContent.alertDetailsOverride | ConvertTo-Json -Compress
     }
 
+    $friendlyName = $yamlContent.name -replace '[^\w\-\.]', '_'
+    $friendlyName = $friendlyName.Substring(0, [Math]::Min($friendlyName.Length, 50))
+
+
     $rule = @{
-        Id                    = $yamlContent.id
-        Name                  = $yamlContent.name
-        Description           = $yamlContent.description
-        Type                  = $type
-        Added                 = $addedDate
-        Link                  = $link
-        Tactics               = $yamlContent.tactics -join ', '
-        RelevantTechniques    = $yamlContent.relevantTechniques -join ', '
-        Severity              = $yamlContent.severity
-        QueryFrequency        = $yamlContent.queryFrequency
-        QueryPeriod           = $yamlContent.queryPeriod
-        Query                 = $yamlContent.query
-        TriggerOperator       = $yamlContent.triggerOperator
-        TriggerThreshold      = $yamlContent.triggerThreshold
-        SuppressionEnabled    = $yamlContent.suppressionEnabled
-        SuppressionDuration   = $yamlContent.suppressionDuration
+        Id                     = $yamlContent.id
+        Name                   = $yamlContent.name
+        FriendlyName           = $friendlyName
+        Description            = $yamlContent.description
+        Type                   = $type
+        Added                  = $addedDate
+        Link                   = $link
+        Tactics                = $yamlContent.tactics -join ', '
+        RelevantTechniques     = $yamlContent.relevantTechniques -join ', '
+        Severity               = $yamlContent.severity
+        QueryFrequency         = $yamlContent.queryFrequency
+        QueryPeriod            = $yamlContent.queryPeriod
+        Query                  = $yamlContent.query
+        TriggerOperator        = $yamlContent.triggerOperator
+        TriggerThreshold       = $yamlContent.triggerThreshold
+        SuppressionEnabled     = $yamlContent.suppressionEnabled
+        SuppressionDuration    = $yamlContent.suppressionDuration
         RequiredDataConnectors = ($yamlContent.requiredDataConnectors | ForEach-Object { "$($_.connectorId): $($_.dataTypes -join ', ')" }) -join '; '
-        Version               = $yamlContent.version
-        EntityMappings        = $entityMappings.TrimEnd("; ")
-        CustomDetails         = $customDetails
-        Metadata              = $metadataJson
-        AlertDetailsOverride  = $alertDetailsOverrideJson
-        CurrentlyEnabled      = $currentlyEnabled
+        Version                = $yamlContent.version
+        EntityMappings         = $entityMappings.TrimEnd("; ")
+        CustomDetails          = $customDetails
+        Metadata               = $metadataJson
+        AlertDetailsOverride   = $alertDetailsOverrideJson
+        CurrentlyEnabled       = $currentlyEnabled
     } + $tags + $incidentConfig + $eventGrouping
 
     if ($isNewRule) {
@@ -242,7 +276,8 @@ if (Test-Path $TempFolder) {
     Push-Location $TempFolder
     git pull
     Pop-Location
-} else {
+}
+else {
     git clone https://github.com/Azure/Azure-Sentinel.git $TempFolder
 }
 
