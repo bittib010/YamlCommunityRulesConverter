@@ -1,12 +1,35 @@
 [CmdletBinding()]
 param (
-    [string]$csvPath = ".\temp\AzureSentinelRules.csv",
-    [string]$outputType,
-    [string]$templateFolderPath = ".\Templates",
+    [string]$csvPath = (Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"),
+    [string]$outputType = "tfazurerm",
+    [string]$templateFolderPath = (Join-Path -Path $PWD -ChildPath "Templates"),
     [switch]$useIdAsFileName,
     [switch]$convertAll,
     [switch]$convertEnabled = $True
 )
+
+function Sanitize-FileName {
+    param (
+        [string]$fileName,
+        [int]$maxLength = 200
+    )
+    # Hardcoded set of invalid characters for both Windows and Linux/Unix
+    # Note: We're not using [IO.Path]::GetInvalidFileNameChars() because its output differs between Windows and Linux
+    $invalidChars = '/><:"\|?*' -join ''
+
+    # Replace invalid characters with underscores
+    $sanitizedName = $fileName
+    foreach ($char in $invalidChars.ToCharArray()) {
+        $sanitizedName = $sanitizedName.Replace($char, '_')
+    }
+
+    # Truncate if longer than maxLength
+    if ($sanitizedName.Length -gt $maxLength) {
+        $sanitizedName = $sanitizedName.Substring(0, $maxLength)
+    }
+
+    return $sanitizedName
+}
 
 function Load-TemplateFiles {
     param (
@@ -19,7 +42,7 @@ function Load-TemplateFiles {
 
     foreach ($file in $templateFiles) {
         $templateName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
-        if($templateName.Split("_")[0] -eq $outputType){
+        if ($templateName.Split("_")[0] -eq $outputType) {
             Write-Host "Loading template: $templateName from file: $($file.FullName)" -ForegroundColor Cyan
             $templates[$templateName] = $file.FullName
         }
@@ -56,7 +79,6 @@ function Generate-Templates {
             Write-Error "The rule with ID $($row.Id) is a Scheduled rule($ruleType), but is missing Severity."
             continue
         }
-
         $templateKey = "${outputType}_${ruleType}"
         $templatePath = $templates[$templateKey]
 
@@ -66,30 +88,38 @@ function Generate-Templates {
         }
 
         $output = & $templatePath
-    
-        # Determine the output file name based on the switch
-        $outputFileName = if ($useIdAsFileName) { "$($row.Id)" } else { "$($row.Name)".Replace(' ', '_').Replace(':', '').Replace('/', '').Replace('\', '') }
-    
-        # Determine the output file path and extension
+
+        # Use Id as the primary file name, fallback to sanitized FriendlyName
+        $outputFileName = if ($row.Id) { 
+            Sanitize-FileName -fileName $row.Id 
+        }
+        else { 
+            Sanitize-FileName -fileName $row.FriendlyName 
+        }
+
         $outputFilePath = switch ($outputType) {
-            "bicep" { ".\temp\BicepRules\$folder\$outputFileName.bicep" }
-            "tfazurerm" { ".\temp\TerraformAzRMRules\$folder\$outputFileName.tf" }
-            "tfazapi" { ".\temp\TerraformAzApiRules\$folder\$outputFileName.tf" }
-            "arm" { ".\temp\ARMRules\$folder\$outputFileName.json" }
+            "bicep" { Join-Path ".\temp\BicepRules" $folder "$outputFileName.bicep" }
+            "tfazurerm" { Join-Path ".\temp\TerraformAzRMRules" $folder "$outputFileName.tf" }
+            "tfazapi" { Join-Path ".\temp\TerraformAzApiRules" $folder "$outputFileName.tf" }
+            "arm" { Join-Path ".\temp\ARMRules" $folder "$outputFileName.json" }
             default {
                 Write-Error "$outputType does not exist"
                 continue
             }
         }
-    
-        # Ensure the directory exists
-        $outputDirectory = Split-Path -Path $outputFilePath
-        if (-not (Test-Path $outputDirectory)) {
-            New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
-        }
 
-        Set-Content -Path $outputFilePath -Value $output
-        Write-Host "Generated file: $outputFilePath" -ForegroundColor Green
+        try {
+            $outputDirectory = Split-Path -Path $outputFilePath -Parent
+            if (-not (Test-Path $outputDirectory)) {
+                New-Item -Path $outputDirectory -ItemType Directory -Force | Out-Null
+            }
+
+            Set-Content -Path $outputFilePath -Value $output -ErrorAction Stop
+            Write-Host "Generated file: $outputFilePath" -ForegroundColor Green
+        }
+        catch {
+            Write-Error "Failed to write file: $outputFilePath. Error: $_"
+        }
     }
 }
 
