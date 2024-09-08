@@ -27,8 +27,8 @@ function Test-RequiredModules {
 Test-RequiredModules
 
 # Set the path to the cloned Azure-Sentinel directory
-$TempFolder = ".\temp\Azure-Sentinel"
-$OutputCsv = ".\temp\AzureSentinelRules.csv"
+$TempFolder = Join-Path -Path $PWD -ChildPath "temp/Azure-Sentinel"
+$OutputCsv = Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"
 
 Function Get-YamlContent {
     param(

@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param (
-    [string]$csvPath = ".\temp\AzureSentinelRules.csv",
-    [string]$outputType,
-    [string]$templateFolderPath = ".\Templates",
+    [string]$csvPath = (Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"),
+    [string]$outputType = "tfazurerm",
+    [string]$templateFolderPath = (Join-Path -Path $PWD -ChildPath "Templates"),
     [switch]$useIdAsFileName,
     [switch]$convertAll,
     [switch]$convertEnabled = $True
@@ -79,7 +79,6 @@ function Generate-Templates {
             Write-Error "The rule with ID $($row.Id) is a Scheduled rule($ruleType), but is missing Severity."
             continue
         }
-
         $templateKey = "${outputType}_${ruleType}"
         $templatePath = $templates[$templateKey]
 
