@@ -126,7 +126,7 @@ function Generate-Templates {
 if (Test-Path $csvPath) {
     Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
 
-    if ($outputType -in @("tfazurerm", "azapi")) {
+    if ($outputType -in @("tfazurerm", "tfazapi")) {
         Write-Output "Formatting all rules with 'terraform fmt -recursive -list=false ./'"
         terraform fmt -recursive -list=false ./
     }
@@ -136,14 +136,9 @@ else {
 }
 
 
-
-
-# TODO: output files to arg dest. Default to temp...
 # TODO: Remove newlines from sections that are not printed to file because not existing.
 # TODO: Azure repo fixes to do:
 #           - Fix missing severity on scheduled rules
 # Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
 # Add fields to CSV to tell when the rule was first added, this will yield dates to track new rules with as well.
-# TODO: add --all to convert all files or default to only selected, meaning all that has the enabled column set to true.
 # TODO: Create an activator function/ps1 file that serves as a way to activate (set to true) rules that apply to a certain maximum of connectors/tables...
-# TODO: Make a swith for terraform to create outputfilenames as alertRuleTemplateGuid instead (this makes it easier for quick lookup where filenames has a different name due to symbol restrictions in naming of files)??
