@@ -14,6 +14,8 @@ Preferably install the VSCode extension to view CSV in a table: janisdd.vscode-e
 .\ConvertToTemplate.ps1 -outputType "tfazurerm"
 # Convert ALL possible rules instead of only the enabled ones
 .\ConvertToTemplate.ps1 -outputType "tfazurerm" -convertAll
+# Enable in the csv rules with given criterias for inputConnectors inputDataTypes, ruleTypeFilter, inputTactics, inputTechniques and run the converter on the csv:
+.\EnableRulesByCondition.ps1 -csvPath .\AzureSentinelRules.csv -inputConnectors "AzureActivity", "BehaviorAnalytics" -ruleTypeFilter "Scheduled Rules" -inputTactics "ResourceDevelopment" 
 ```
 
 # Contributing
