@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param (
     [string]$csvPath = (Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"),
-    [string]$outputType = "tfazurerm",
+    [string]$outputType,
     [string]$templateFolderPath = (Join-Path -Path $PWD -ChildPath "Templates"),
     [switch]$useIdAsFileName,
     [switch]$convertAll,
@@ -103,7 +103,7 @@ function Generate-Templates {
             "tfazapi" { Join-Path ".\temp\TerraformAzApiRules" $folder "$outputFileName.tf" }
             "arm" { Join-Path ".\temp\ARMRules" $folder "$outputFileName.json" }
             default {
-                Write-Error "$outputType does not exist"
+                Write-Error "$outputType does not exist or has not been set by using the argument -OutputType 'tfazurerm', 'tfazapi'..."
                 continue
             }
         }

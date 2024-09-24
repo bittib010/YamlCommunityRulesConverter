@@ -208,7 +208,7 @@ Function Process-YamlFile {
     } + $tags + $incidentConfig + $eventGrouping
 
     if ($isNewRule) {
-        Write-Host "New rule added with Id: $($yamlContent.id)"
+        Write-Host "New rule added to CSV with Id: $($yamlContent.id)"
     }
 
     return $rule
@@ -278,7 +278,8 @@ if (Test-Path $TempFolder) {
     Pop-Location
 }
 else {
-    git clone https://github.com/Azure/Azure-Sentinel.git $TempFolder
+    # temporary limit the download
+    git clone --filter=blob:limit=13k https://github.com/Azure/Azure-Sentinel.git $TempFolder
 }
 
 # Import existing rules from the CSV if it exists
@@ -289,6 +290,3 @@ $newRulesList = Search-AzureSentinelRepo -repoDirectory $TempFolder -existingRul
 
 # Export the rules to a CSV file
 Export-RulesToCsv -rulesList $newRulesList -csvPath $OutputCsv
-
-# TODO: add a check to see if the outputfile has been created already. If it has been created, we need to ensure a way to compare versions of the rules. If the version is unchanged, proceed to the next rule.
-# TODO: Filter out the: "C:\temp\Azure-Sentinel\.script\tests\yamlFileValidatorTest\invalidFile.yaml"
