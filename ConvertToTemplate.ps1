@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param (
-    [string]$csvPath = (Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"),
+    [string]$csvPath,
     [string]$outputType,
-    [string]$templateFolderPath = (Join-Path -Path $PWD -ChildPath "Templates"),
+    [string]$templateFolderPath = (Join-Path -Path $PSScriptRoot -ChildPath "Templates"),
     [switch]$useIdAsFileName,
     [switch]$convertAll,
     [switch]$convertEnabled = $True
