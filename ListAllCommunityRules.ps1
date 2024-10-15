@@ -243,9 +243,35 @@ Function Export-RulesToCsv {
     }
 
     $csvData = $rulesList | ForEach-Object {
-        [PSCustomObject]$_
+        [PSCustomObject]@{
+            Id                     = $_.Id
+            CurrentlyEnabled       = $_.CurrentlyEnabled
+            Name                   = $_.Name
+            Description            = $_.Description
+            FriendlyName           = $_.FriendlyName
+            Type                   = $_.Type
+            Added                  = $_.Added
+            Link                   = $_.Link
+            Tactics                = $_.Tactics
+            RelevantTechniques     = $_.RelevantTechniques
+            Severity               = $_.Severity
+            QueryFrequency         = $_.QueryFrequency
+            QueryPeriod            = $_.QueryPeriod
+            Query                  = $_.Query
+            TriggerOperator        = $_.TriggerOperator
+            TriggerThreshold       = $_.TriggerThreshold
+            SuppressionEnabled     = $_.SuppressionEnabled
+            SuppressionDuration    = $_.SuppressionDuration
+            RequiredDataConnectors = $_.RequiredDataConnectors
+            Version                = $_.Version
+            EntityMappings         = $_.EntityMappings
+            CustomDetails          = $_.CustomDetails
+            Metadata               = $_.Metadata
+            AlertDetailsOverride   = $_.AlertDetailsOverride
+        }
     }
 
+    # Export to CSV, ensuring column order
     $csvData | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "$($rulesList.Count) rules exported to $csvPath"
 }
