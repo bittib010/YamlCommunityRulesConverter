@@ -1,3 +1,8 @@
+param(
+    [string]$TempFolder = (Join-Path -Path $PWD -ChildPath "temp/Azure-Sentinel"),
+    [string]$OutputCsv = (Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv")
+)
+
 # Function to ensure powershell-yaml module is available
 function Test-RequiredModules {
     $moduleNames = @("powershell-yaml")
@@ -23,12 +28,8 @@ function Test-RequiredModules {
     }
 }
 
-# Ensure requiuired modules are available
+# Ensure required modules are available
 Test-RequiredModules
-
-# Set the path to the cloned Azure-Sentinel directory
-$TempFolder = Join-Path -Path $PWD -ChildPath "temp/Azure-Sentinel"
-$OutputCsv = Join-Path -Path $PWD -ChildPath "temp/AzureSentinelRules.csv"
 
 Function Get-YamlContent {
     param(
@@ -56,8 +57,6 @@ Function Process-YamlFile {
     }
 
     $yamlContent = Get-YamlContent -filePath $filePath
-
-    
 
     if ($null -eq $yamlContent -or $null -eq $yamlContent.id -or [string]::IsNullOrEmpty($yamlContent.name) -or [string]::IsNullOrEmpty($yamlContent.query)) {
         return $null
@@ -179,12 +178,12 @@ Function Process-YamlFile {
     $friendlyName = $yamlContent.name -replace '[^\w\-\.]', '_'
     $friendlyName = $friendlyName.Substring(0, [Math]::Min($friendlyName.Length, 50))
 
-
     $rule = @{
         Id                     = $yamlContent.id
+        CurrentlyEnabled       = $currentlyEnabled
         Name                   = $yamlContent.name
-        FriendlyName           = $friendlyName
         Description            = $yamlContent.description
+        FriendlyName           = $friendlyName
         Type                   = $type
         Added                  = $addedDate
         Link                   = $link
@@ -204,7 +203,6 @@ Function Process-YamlFile {
         CustomDetails          = $customDetails
         Metadata               = $metadataJson
         AlertDetailsOverride   = $alertDetailsOverrideJson
-        CurrentlyEnabled       = $currentlyEnabled
     } + $tags + $incidentConfig + $eventGrouping
 
     if ($isNewRule) {
@@ -286,7 +284,7 @@ else {
 $existingRules = Import-ExistingRules -csvPath $OutputCsv
 
 # Search the Azure Sentinel GitHub repository
-$newRulesList = Search-AzureSentinelRepo -repoDirectory $TempFolder -existingRules $existingRules
+$newRulesList = Search-AzureSentinelRepo -repoDirectory (Join-Path -Path $TempFolder -ChildPath "Azure-Sentinel/Solutions") -existingRules $existingRules
 
 # Export the rules to a CSV file
 Export-RulesToCsv -rulesList $newRulesList -csvPath $OutputCsv
