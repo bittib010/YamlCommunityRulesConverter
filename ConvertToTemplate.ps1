@@ -3,6 +3,7 @@ param (
     [string]$csvPath,
     [string]$outputType,
     [string]$templateFolderPath = (Join-Path -Path $PSScriptRoot -ChildPath "Templates"),
+    [string]$outputRootFolder,
     [switch]$useIdAsFileName,
     [switch]$convertAll,
     [switch]$convertEnabled = $True
@@ -27,7 +28,6 @@ function Sanitize-FileName {
     if ($sanitizedName.Length -gt $maxLength) {
         $sanitizedName = $sanitizedName.Substring(0, $maxLength)
     }
-
     return $sanitizedName
 }
 
@@ -36,10 +36,8 @@ function Load-TemplateFiles {
         [string]$templateFolderPath,
         [string]$outputType
     )
-
     $templateFiles = Get-ChildItem -Path $templateFolderPath -Filter "*.ps1"
     $templates = @{}
-
     foreach ($file in $templateFiles) {
         $templateName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
         if ($templateName.Split("_")[0] -eq $outputType) {
@@ -47,7 +45,6 @@ function Load-TemplateFiles {
             $templates[$templateName] = $file.FullName
         }
     }
-    
     return $templates
 }
 
@@ -55,7 +52,8 @@ function Generate-Templates {
     param (
         [string]$csvPath,
         [string]$outputType,
-        [string]$templateFolderPath
+        [string]$templateFolderPath,
+        [string]$outputRootFolder
     )
 
     $templates = Load-TemplateFiles -templateFolderPath $templateFolderPath -outputType $outputType
@@ -97,11 +95,12 @@ function Generate-Templates {
             Sanitize-FileName -fileName $row.FriendlyName 
         }
 
+        # Join with the provided outputRootFolder
         $outputFilePath = switch ($outputType) {
-            "bicep" { Join-Path ".\temp\BicepRules" $folder "$outputFileName.bicep" }
-            "tfazurerm" { Join-Path ".\temp\TerraformAzRMRules" $folder "$outputFileName.tf" }
-            "tfazapi" { Join-Path ".\temp\TerraformAzApiRules" $folder "$outputFileName.tf" }
-            "arm" { Join-Path ".\temp\ARMRules" $folder "$outputFileName.json" }
+            "bicep" { Join-Path $outputRootFolder $folder "$outputFileName.bicep" }
+            "tfazurerm" { Join-Path $outputRootFolder $folder "$outputFileName.tf" }
+            "tfazapi" { Join-Path $outputRootFolder $folder "$outputFileName.tf" }
+            "arm" { Join-Path $outputRootFolder $folder "$outputFileName.json" }
             default {
                 Write-Error "$outputType does not exist or has not been set by using the argument -OutputType 'tfazurerm', 'tfazapi'..."
                 continue
@@ -124,11 +123,11 @@ function Generate-Templates {
 }
 
 if (Test-Path $csvPath) {
-    Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath
+    Generate-Templates -csvPath $csvPath -outputType $outputType -templateFolderPath $templateFolderPath -outputRootFolder $outputRootFolder
 
     if ($outputType -in @("tfazurerm", "tfazapi")) {
         Write-Output "Formatting all rules with 'terraform fmt -recursive -list=false ./'"
-        terraform fmt -recursive -list=false ./
+        terraform fmt -recursive -list=false ./ 
     }
 }
 else {
@@ -136,9 +135,8 @@ else {
 }
 
 
+
 # TODO: Remove newlines from sections that are not printed to file because not existing.
-# TODO: Azure repo fixes to do:
-#           - Fix missing severity on scheduled rules
 # Look into techniques/tactics that they align with terraform correcly (no subtech and so on)
 # Add fields to CSV to tell when the rule was first added, this will yield dates to track new rules with as well.
 # TODO: Create an activator function/ps1 file that serves as a way to activate (set to true) rules that apply to a certain maximum of connectors/tables...
