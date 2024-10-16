@@ -1,21 +1,33 @@
 # Main Template starts here:
 @"
-param logAnalyticsWorkspaceId string = var.log_analytics_workspace_id
-param queryName string = $guid
-param displayName string = $($row.Name)
-param category string = "Security"
-param query string = $($row.Query)
-param version int = 2
-
-resource huntingQuery 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
-  name: queryName
-  parent: resource(logAnalyticsWorkspaceId)
+resource symbolicname 'Microsoft.OperationalInsights/workspaces/savedSearches@2020-08-01' = {
+  // name: '$guid' // TODO
+  // parent: $loganalyticsworkspace // TODO
+  // etag: 'string'
   properties: {
-    displayName: displayName
-    category: category
-    query: query
-    version: version
+    category: 'Hunting Queries'
+    displayName: '$($row.Name)'
+    // functionAlias: 'string'
+    // functionParameters: 'string'
+    query: '''$($row.Query)'''
+    tags: [
+      {
+        name: 'description'
+        value: '$($row.Description)'
+      },
+                {  
+        "name": "tactics",  
+        "value": "$($row.Tactics)"  
+      },  
+      {  
+        "name": "relevantTechniques",  
+        "value": "$($row.RelevantTechniques)"  
+      }  
+    ]
+    version: 2 // Current version of query language
   }
 }
-
 "@
+
+
+
