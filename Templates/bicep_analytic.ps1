@@ -53,6 +53,47 @@ $description = $row.Description -replace '"', '\"' -replace "'", "\'" -replace '
 
 $alertTactics = $AlertDetailsOverrideJson.alertTactics -replace '"', '\"'
 
+
+
+#################################
+# Prepare entityMappings for Scheduled Rule
+############################################
+$entityMappings = $row.EntityMappings
+$entityMappingsArray = @()
+
+# Split the entity mappings by entityType
+$entityMappings.Split(';') | ForEach-Object {
+    $entityMapping = $_.Trim()
+    if ($entityMapping) {
+        $entityType, $fieldMappings = $entityMapping -split ', fieldMappings: '
+        $entityType = $entityType -replace 'entityType: ', ''
+        $fieldMappingsArray = @()
+
+        # Split the field mappings by comma and process each mapping
+        $fieldMappings.Split(';') | ForEach-Object {
+            $fieldMapping = $_.Trim()
+            if ($fieldMapping) {
+                $columnName, $identifier = $fieldMapping -split ':'
+                $columnName = $columnName.Trim()
+                $identifier = $identifier.Trim()
+                $fieldMappingsArray += "{
+                    columnName: '$columnName'
+                    identifier: '$identifier'
+                }"
+            }
+        }
+
+        $fieldMappingsJson = $fieldMappingsArray -join ","
+        $entityMappingsArray += "{
+            entityType: '$entityType'
+            fieldMappings: [$fieldMappingsJson]
+        }"
+    }
+}
+
+# TODO: Do they need commas here?
+$entityMappings = $entityMappingsArray -join ","
+
 # Main Template starts here:
 @"
 resource scheduledRule 'Microsoft.SecurityInsights/alertRules@2023-02-01-preview' = {
@@ -76,15 +117,7 @@ resource scheduledRule 'Microsoft.SecurityInsights/alertRules@2023-02-01-preview
     displayName: '$($row.Name)'
     enabled: true
     entityMappings: [
-      {
-        entityType: 'string'
-        fieldMappings: [
-          {
-            columnName: 'string'
-            identifier: 'string'
-          }
-        ]
-      }
+      $entityMappings
     ]
     eventGroupingSettings: {
       aggregationKind: 'string'

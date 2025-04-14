@@ -72,8 +72,9 @@ Function Process-YamlFile {
     }
 
     # Generate the correct GitHub link
+    # TODO: as input temp path is differing from other paths, we should rather start the relative path offset from Azure-Sentinel?
     $relativePath = $filePath -replace [regex]::Escape("$TempFolder\"), ""
-    $relativePath = $relativePath -replace '\\', '/'
+    $relativePath = $relativePath -replace '\\', '/' -replace " ", "%20"
     $link = "https://github.com/Azure/Azure-Sentinel/blob/master/$relativePath"
 
     $isNewRule = $false
@@ -189,6 +190,7 @@ Function Process-YamlFile {
         Link                   = $link
         Tactics                = $yamlContent.tactics -join ', '
         RelevantTechniques     = $yamlContent.relevantTechniques -join ', '
+        SubTechniques          = $yamlContent.subTechniques -join ', '
         Severity               = $yamlContent.severity
         QueryFrequency         = $yamlContent.queryFrequency
         QueryPeriod            = $yamlContent.queryPeriod
@@ -254,6 +256,7 @@ Function Export-RulesToCsv {
             Link                   = $_.Link
             Tactics                = $_.Tactics
             RelevantTechniques     = $_.RelevantTechniques
+            SubTechniques          = $_.subTechniques
             Severity               = $_.Severity
             QueryFrequency         = $_.QueryFrequency
             QueryPeriod            = $_.QueryPeriod
